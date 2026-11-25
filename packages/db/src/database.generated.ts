@@ -61,6 +61,7 @@ export interface Bookings {
   hold_expires_at: Timestamp;
   id: Generated<string>;
   idempotency_key: string;
+  idempotency_request_hash: string;
   promo_code_id: string | null;
   reference: string;
   status: Generated<BookingStatus>;
@@ -107,6 +108,7 @@ export interface ProductDays {
 export interface Products {
   admits_adults: Generated<number>;
   admits_children: Generated<number>;
+  capped_by_daily_headcount: Generated<boolean>;
   code: string;
   day_scope: DayScope;
   display_name: string;

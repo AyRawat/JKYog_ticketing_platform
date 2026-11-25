@@ -12,17 +12,17 @@ WITH e AS (
 INSERT INTO event_days (event_id, day_date)
 SELECT e.id, d::date FROM e, generate_series('2026-12-10'::date, '2026-12-14'::date, '1 day') d;
 
-INSERT INTO products (event_id, code, display_name, kind, day_scope, unit_price_cents, admits_adults, admits_children, max_per_booking, sort_order)
+INSERT INTO products (event_id, code, display_name, kind, day_scope, unit_price_cents, admits_adults, admits_children, max_per_booking, capped_by_daily_headcount, sort_order)
 SELECT id, v.* FROM events, (VALUES
-  ('DAY_PASS_ADULT',     'Day Pass – Adult',      'entry'::product_kind, 'per_day'::day_scope,     1500, 1, 0, NULL::smallint, 1),
-  ('DAY_PASS_CHILD',     'Day Pass – Child',      'entry',               'per_day',                 800, 0, 1, NULL, 2),
-  ('ALL_DAY_PASS_ADULT', 'All-Day Pass – Adult',  'entry',               'whole_event',            6000, 1, 0, NULL, 3),
-  ('ALL_DAY_PASS_CHILD', 'All-Day Pass – Child',  'entry',               'whole_event',            3000, 0, 1, NULL, 4),
-  ('FAMILY_PASS',        'Family Pass',           'entry',               'per_day',                4000, 2, 2, NULL, 5),
-  ('DANDIYA_STICKS',     'Dandiya Sticks (pair)', 'extra',               'whole_event',             500, 0, 0, 20,   6),
-  ('DINNER_PLATE',       'Dinner Plate',          'extra',               'per_day',                1200, 0, 0, NULL, 7),
-  ('GARBA_WORKSHOP',     'Garba Workshop',        'extra',               'per_day',                2000, 0, 0, NULL, 8)
-) AS v(code, display_name, kind, day_scope, unit_price_cents, admits_adults, admits_children, max_per_booking, sort_order)
+  ('DAY_PASS_ADULT',     'Day Pass – Adult',      'entry'::product_kind, 'per_day'::day_scope,     1500, 1, 0, NULL::smallint, false, 1),
+  ('DAY_PASS_CHILD',     'Day Pass – Child',      'entry',               'per_day',                 800, 0, 1, NULL, false, 2),
+  ('ALL_DAY_PASS_ADULT', 'All-Day Pass – Adult',  'entry',               'whole_event',            6000, 1, 0, NULL, false, 3),
+  ('ALL_DAY_PASS_CHILD', 'All-Day Pass – Child',  'entry',               'whole_event',            3000, 0, 1, NULL, false, 4),
+  ('FAMILY_PASS',        'Family Pass',           'entry',               'per_day',                4000, 2, 2, NULL, false, 5),
+  ('DANDIYA_STICKS',     'Dandiya Sticks (pair)', 'extra',               'whole_event',             500, 0, 0, 20,   false, 6),
+  ('DINNER_PLATE',       'Dinner Plate',          'extra',               'per_day',                1200, 0, 0, NULL, true,  7),
+  ('GARBA_WORKSHOP',     'Garba Workshop',        'extra',               'per_day',                2000, 0, 0, NULL, true,  8)
+) AS v(code, display_name, kind, day_scope, unit_price_cents, admits_adults, admits_children, max_per_booking, capped_by_daily_headcount, sort_order)
 WHERE events.slug = 'sharad-utsav-2026';
 
 -- Every product on every day, except Garba (11 & 13 Dec only); Dandiya is a souvenir, no days.
