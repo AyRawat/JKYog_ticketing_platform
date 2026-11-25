@@ -27,38 +27,37 @@ const ProductCode = z.string().min(1).max(QUOTE_LIMITS.codeLength);
 /** A whole number. Whether it is a sensible age or quantity is a booking rule, reported as an issue. */
 const WholeNumber = z.int();
 
+/** A person's ticket, or null for a child under the free age. */
+export const CartEntry = z
+  .strictObject({
+    productCode: ProductCode,
+    /** Days for a per-day ticket; leave empty for a whole-event pass. */
+    days: z.array(IsoDate).max(QUOTE_LIMITS.daysPerEntry).default([]),
+  })
+  .nullable();
+
+export const CartExtra = z.strictObject({
+  productCode: ProductCode,
+  /** The day for a per-day extra; null for a whole-event extra. */
+  day: IsoDate.nullable().default(null),
+  quantity: WholeNumber,
+});
+
+/** Age in whole years on the event's age reference date. */
+export const AgeYears = WholeNumber;
+
+export const CartExtras = z.array(CartExtra).max(QUOTE_LIMITS.extras).default([]);
+export const PromoCodeInput = z.string().max(QUOTE_LIMITS.promoCodeLength).nullable().default(null);
+
 export const QuoteRequest = z.strictObject({
   /** The person paying. Optional while the form is being filled in; required to book. */
-  booker: z.strictObject({ ageYears: WholeNumber }).nullable().default(null),
+  booker: z.strictObject({ ageYears: AgeYears }).nullable().default(null),
   /** Everyone coming, including children under the free age. */
   attendees: z
-    .array(
-      z.strictObject({
-        /** Age in whole years on the event's age reference date. */
-        ageYears: WholeNumber,
-        /** The person's ticket, or null for a child under the free age. */
-        entry: z
-          .strictObject({
-            productCode: ProductCode,
-            /** Days for a per-day ticket; leave empty for a whole-event pass. */
-            days: z.array(IsoDate).max(QUOTE_LIMITS.daysPerEntry).default([]),
-          })
-          .nullable(),
-      }),
-    )
+    .array(z.strictObject({ ageYears: AgeYears, entry: CartEntry }))
     .max(QUOTE_LIMITS.attendees),
-  extras: z
-    .array(
-      z.strictObject({
-        productCode: ProductCode,
-        /** The day for a per-day extra; null for a whole-event extra. */
-        day: IsoDate.nullable().default(null),
-        quantity: WholeNumber,
-      }),
-    )
-    .max(QUOTE_LIMITS.extras)
-    .default([]),
-  promoCode: z.string().max(QUOTE_LIMITS.promoCodeLength).nullable().default(null),
+  extras: CartExtras,
+  promoCode: PromoCodeInput,
 });
 /** What a client sends (defaults may be left out). */
 export type QuoteRequestInput = z.input<typeof QuoteRequest>;

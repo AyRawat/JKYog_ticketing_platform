@@ -12,6 +12,7 @@ export {
   type TicketedBand,
 } from "./age";
 export { unitsToAdmit } from "./composition";
+export { checkAttendeeContacts } from "./contacts";
 export { formatDay, formatDayList, localDate, type IsoDate } from "./dates";
 export { ISSUE_CODES, type Issue, type IssueCode } from "./issues";
 export { formatCents, percentOfCents, type Cents } from "./money";

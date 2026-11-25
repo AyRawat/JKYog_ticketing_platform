@@ -18,13 +18,25 @@ export const ERROR_CODES = [
   "UNSUPPORTED_MEDIA_TYPE",
   "PAYLOAD_TOO_LARGE",
   "EVENT_NOT_FOUND",
+  "BOOKING_INVALID",
+  "PRICE_CHANGED",
+  "SOLD_OUT",
+  "PROMO_UNAVAILABLE",
+  "IDEMPOTENCY_KEY_REUSED",
   "INTERNAL_ERROR",
 ] as const;
 export const ErrorCode = z.enum(ERROR_CODES);
 export type ErrorCode = z.infer<typeof ErrorCode>;
 
-/** One field that broke the request schema. `path` uses the same form as quote issues. */
-export const FieldError = z.object({ path: z.string(), message: z.string() });
+/**
+ * One field that is wrong. `path` uses the same form as quote issues. For BOOKING_INVALID,
+ * `code` is the booking rule that failed (an issue code or a promo rejection reason).
+ */
+export const FieldError = z.object({
+  path: z.string(),
+  message: z.string(),
+  code: z.string().optional(),
+});
 export type FieldError = z.infer<typeof FieldError>;
 
 /** The body of every non-2xx response. `message` is safe to show to the family. */
@@ -32,7 +44,7 @@ export const ErrorResponse = z.object({
   error: z.object({
     code: ErrorCode,
     message: z.string(),
-    /** Only for INVALID_REQUEST: each field that was wrong. */
+    /** For INVALID_REQUEST and BOOKING_INVALID: each field that was wrong. */
     details: z.array(FieldError).optional(),
   }),
 });
@@ -47,9 +59,9 @@ export function formatPath(path: readonly PropertyKey[]): string {
   }, "");
 }
 
-/** Every problem in a failed parse, one entry per field; unknown fields are listed by name. */
+/** Every field that failed to parse, with its first problem; unknown fields are listed by name. */
 export function fieldErrors(error: z.ZodError): FieldError[] {
-  return error.issues.flatMap((issue) =>
+  const all = error.issues.flatMap((issue) =>
     issue.code === "unrecognized_keys"
       ? issue.keys.map((key) => ({
           path: formatPath([...issue.path, key]),
@@ -57,4 +69,6 @@ export function fieldErrors(error: z.ZodError): FieldError[] {
         }))
       : [{ path: formatPath(issue.path), message: issue.message }],
   );
+  const seen = new Set<string>();
+  return all.filter(({ path }) => !seen.has(path) && seen.add(path));
 }

@@ -22,6 +22,7 @@ export const ISSUE_CODES = [
   "EXCEEDS_DAILY_HEADCOUNT",
   "SOLD_OUT",
   "INSUFFICIENT_STOCK",
+  "PHONE_NOT_ALLOWED",
 ] as const;
 
 export type IssueCode = (typeof ISSUE_CODES)[number];

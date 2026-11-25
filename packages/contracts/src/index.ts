@@ -4,3 +4,4 @@
 export * from "./common";
 export * from "./catalog";
 export * from "./quote";
+export * from "./booking";

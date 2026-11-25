@@ -11,9 +11,17 @@ export interface EventDetails {
   readonly holdMinutes: number;
 }
 
+/** Database ids behind the catalog's codes and dates, for writing bookings. */
+export interface CatalogIds {
+  readonly event: string;
+  readonly products: ReadonlyMap<string, string>;
+  readonly days: ReadonlyMap<IsoDate, string>;
+}
+
 export interface EventCatalog {
   readonly catalog: Catalog;
   readonly details: EventDetails;
+  readonly ids: CatalogIds;
 }
 
 /**
@@ -31,7 +39,7 @@ export async function loadEventCatalog(db: Database, slug: string): Promise<Even
   const [days, products, productDays, promos] = await Promise.all([
     db
       .selectFrom("event_days")
-      .select("day_date")
+      .select(["id", "day_date"])
       .where("event_id", "=", event.id)
       .orderBy("day_date")
       .execute(),
@@ -116,6 +124,11 @@ export async function loadEventCatalog(db: Database, slug: string): Promise<Even
       venue: event.venue,
       currency: event.currency,
       holdMinutes: event.hold_minutes,
+    },
+    ids: {
+      event: event.id,
+      products: new Map(products.map((row) => [row.code, row.id])),
+      days: new Map(days.map((day) => [day.day_date, day.id])),
     },
   };
 }
