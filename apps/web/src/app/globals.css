@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* Brand tokens from the assessment (§2). Booking pages are dark. */
+@theme {
+  --color-primary-dark: #2c2c2c;
+  --color-primary: #c99b24;
+  --color-gold: #bc9226;
+  --color-bright-gold: #d1ac3e;
+  --color-cream: #fdf3e4;
+  --color-heading: #291900;
+  --color-primary-text: #645743;
+  --color-success: #28a736;
+  --color-error: #ef1f1f;
+
+  --font-serif: var(--font-heading), ui-serif, Georgia, serif;
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-primary-dark);
+  color: #ffffff;
+  font-family: var(--font-sans);
+}

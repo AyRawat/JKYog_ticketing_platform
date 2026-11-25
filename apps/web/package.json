@@ -1,0 +1,36 @@
+{
+  "name": "@ticketing/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "next typegen && tsc --noEmit"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^7.0.9",
+    "@next/env": "^16.4.6",
+    "@stripe/react-stripe-js": "^7.1.0",
+    "@stripe/stripe-js": "^10.4.0",
+    "@ticketing/contracts": "workspace:*",
+    "@ticketing/db": "workspace:*",
+    "@ticketing/domain": "workspace:*",
+    "@vercel/functions": "^3.11.3",
+    "kysely": "^0.29.9",
+    "next": "^16.4.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-hook-form": "^7.92.0",
+    "server-only": "^0.0.1",
+    "stripe": "^23.2.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@tailwindcss/postcss": "^4.3.5",
+    "@types/react": "^19.3.2",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.5"
+  }
+}
