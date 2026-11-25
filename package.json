@@ -1,0 +1,34 @@
+{
+  "name": "sharad-utsav-booking",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @ticketing/web dev",
+    "build": "pnpm --filter @ticketing/web build",
+    "lint": "eslint .",
+    "format": "prettier --write . --ignore-path .gitignore --ignore-path .prettierignore --ignore-path .git/info/exclude",
+    "format:check": "prettier --check . --ignore-path .gitignore --ignore-path .prettierignore --ignore-path .git/info/exclude",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run --project unit",
+    "db:migrate": "pnpm --filter @ticketing/db migrate",
+    "db:seed": "pnpm --filter @ticketing/db seed",
+    "db:reset": "pnpm --filter @ticketing/db reset",
+    "db:codegen": "pnpm --filter @ticketing/db codegen"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@next/eslint-plugin-next": "^16.4.6",
+    "@types/node": "^22.20.6",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "^3.10.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.74.0",
+    "vitest": "^4.1.12"
+  }
+}
