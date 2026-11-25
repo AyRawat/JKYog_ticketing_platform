@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ticketing/domain": "workspace:*",
     "zod": "^4.6.7"
   }
 }

@@ -2,7 +2,7 @@ import { CatalogResponse, EventSlug } from "@ticketing/contracts";
 import { toCatalogResponse } from "@/server/catalog/catalog-response";
 import { loadEventCatalog } from "@/server/catalog/load-catalog";
 import { getDb } from "@/server/db";
-import { errorResponse, internalError, jsonResponse } from "@/server/http";
+import { eventNotFound, internalError, jsonResponse } from "@/server/http";
 
 export const runtime = "nodejs";
 
@@ -33,8 +33,4 @@ export async function GET(
   } catch (error) {
     return internalError("catalog: failed to load", error);
   }
-}
-
-function eventNotFound(): Response {
-  return errorResponse(404, "EVENT_NOT_FOUND", "We couldn't find that event.");
 }

@@ -1,6 +1,8 @@
 import { ErrorResponse } from "@ticketing/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GET } from "@/app/api/events/[slug]/catalog/route";
+import { GET as getCatalog } from "@/app/api/events/[slug]/catalog/route";
+import { POST as postQuote } from "@/app/api/events/[slug]/quote/route";
+import { call } from "./support/http";
 
 // The database is unreachable, and the driver's error carries details a client must never see.
 vi.mock("@/server/db", () => ({
@@ -10,21 +12,22 @@ vi.mock("@/server/db", () => ({
 }));
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
-describe("GET /api/events/:slug/catalog when the database fails", () => {
+describe.each([
+  ["GET catalog", () => call(getCatalog, "catalog")],
+  ["POST quote", () => call(postQuote, "quote", { json: { attendees: [] } })],
+])("%s when the database fails", (_, request) => {
   it("returns 500 INTERNAL_ERROR with a generic message and logs the cause", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const slug = "sharad-utsav-2026";
 
-    const response = await GET(new Request(`http://localhost/api/events/${slug}/catalog`), {
-      params: Promise.resolve({ slug }),
-    });
-    const text = await response.text();
+    const { status, text, json, response } = await request();
 
-    expect(response.status).toBe(500);
-    expect(ErrorResponse.parse(JSON.parse(text))).toEqual({
+    expect(status).toBe(500);
+    expect(ErrorResponse.parse(json)).toEqual({
       error: {
         code: "INTERNAL_ERROR",
         message: "Something went wrong on our side. Please try again.",

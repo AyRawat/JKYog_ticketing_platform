@@ -6,7 +6,8 @@ import { plural } from "./issues";
 import { formatCents, type Cents } from "./money";
 import type { EntryProduct } from "./types";
 
-export type NoticeCode = "CHEAPER_BUNDLE_AVAILABLE" | "CHEAPER_WHOLE_EVENT_PASS";
+export const NOTICE_CODES = ["CHEAPER_BUNDLE_AVAILABLE", "CHEAPER_WHOLE_EVENT_PASS"] as const;
+export type NoticeCode = (typeof NOTICE_CODES)[number];
 
 /** Advice, never a block: the family decides. Nothing in the cart is changed. */
 export interface Notice {

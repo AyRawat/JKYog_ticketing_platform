@@ -15,7 +15,7 @@ export { unitsToAdmit } from "./composition";
 export { formatDay, formatDayList, localDate, type IsoDate } from "./dates";
 export { ISSUE_CODES, type Issue, type IssueCode } from "./issues";
 export { formatCents, percentOfCents, type Cents } from "./money";
-export type { Notice, NoticeCode } from "./notices";
+export { NOTICE_CODES, type Notice, type NoticeCode } from "./notices";
 export { PROMO_REJECTIONS, type PromoRejection, type PromoResult } from "./promo";
 export { unitsByProduct } from "./stock";
 export type * from "./types";
