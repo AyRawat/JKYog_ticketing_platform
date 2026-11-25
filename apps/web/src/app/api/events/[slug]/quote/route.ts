@@ -1,5 +1,6 @@
 import { EventSlug, QuoteRequest, QuoteResponse } from "@ticketing/contracts";
 import { quoteCart } from "@ticketing/domain";
+import { releaseExpiredHolds } from "@/server/bookings/release-holds";
 import { loadEventCatalog } from "@/server/catalog/load-catalog";
 import { getDb } from "@/server/db";
 import { toQuoteResponse } from "@/server/quote/quote-response";
@@ -15,7 +16,7 @@ export const runtime = "nodejs";
  *
  * Prices a cart against the live catalog. A well-formed cart always gets a 200, even when it
  * breaks booking rules: those come back as `issues` so the form can show them in place.
- * Changes nothing and is never cached.
+ * Changes no booking data (it only releases holds that have already expired) and is never cached.
  */
 export async function POST(
   request: Request,
@@ -28,10 +29,14 @@ export async function POST(
   if (!body.ok) return body.response;
 
   try {
-    const eventCatalog = await loadEventCatalog(getDb(), slug);
+    const db = getDb();
+    const now = new Date();
+    // Stock held by unpaid bookings whose time ran out is back on sale before we look at it.
+    await releaseExpiredHolds(db, { now });
+    const eventCatalog = await loadEventCatalog(db, slug);
     if (!eventCatalog) return eventNotFound();
 
-    const quote = quoteCart({ catalog: eventCatalog.catalog, cart: body.data, now: new Date() });
+    const quote = quoteCart({ catalog: eventCatalog.catalog, cart: body.data, now });
     return jsonResponse(QuoteResponse, toQuoteResponse(quote), {
       headers: { "Cache-Control": "no-store" },
     });

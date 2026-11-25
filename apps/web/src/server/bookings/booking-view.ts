@@ -23,6 +23,8 @@ export async function loadBookingView(
       "b.discount_cents",
       "b.total_cents",
       "e.currency",
+      "e.slug as event_slug",
+      "e.name as event_name",
       "pc.code as promo_code",
     ])
     .where("b.id", "=", bookingId)
@@ -71,6 +73,7 @@ export async function loadBookingView(
 
   return {
     id: booking.id,
+    event: { slug: booking.event_slug, name: booking.event_name },
     reference: booking.reference,
     status: booking.status,
     holdExpiresAt: booking.hold_expires_at.toISOString(),

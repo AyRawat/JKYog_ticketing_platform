@@ -1,5 +1,6 @@
 import { ErrorResponse } from "@ticketing/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { GET as getBooking } from "@/app/api/bookings/[id]/route";
 import { GET as getCatalog } from "@/app/api/events/[slug]/catalog/route";
 import { POST as postQuote } from "@/app/api/events/[slug]/quote/route";
 import { call } from "./support/http";
@@ -19,6 +20,17 @@ afterEach(() => {
 describe.each([
   ["GET catalog", () => call(getCatalog, "catalog")],
   ["POST quote", () => call(postQuote, "quote", { json: { attendees: [] } })],
+  [
+    "GET booking",
+    async () => {
+      const id = "8b1c6c1e-6d0c-4b41-9b7a-2f8d5d6e2a11";
+      const response = await getBooking(new Request(`http://localhost/api/bookings/${id}`), {
+        params: Promise.resolve({ id }),
+      });
+      const text = await response.text();
+      return { response, status: response.status, text, json: JSON.parse(text) as unknown };
+    },
+  ],
 ])("%s when the database fails", (_, request) => {
   it("returns 500 INTERNAL_ERROR with a generic message and logs the cause", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });

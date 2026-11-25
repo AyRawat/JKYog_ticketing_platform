@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { BookingRequestInput } from "@ticketing/contracts";
 import { sql } from "kysely";
+import { vi } from "vitest";
+import { GET } from "@/app/api/bookings/[id]/route";
 import { POST } from "@/app/api/events/[slug]/bookings/route";
 import { testDb } from "./db";
-import { call, type CallOptions } from "./http";
+import { BEFORE_FESTIVAL, call, type CallOptions } from "./http";
 
 /** POSTs a booking with its own Idempotency-Key unless one is given. */
 export function book(
@@ -78,4 +80,27 @@ export async function snapshot() {
 export async function setStock(code: string, remaining: number): Promise<void> {
   await sql`UPDATE inventory SET remaining = ${remaining}
             WHERE product_id = (SELECT id FROM products WHERE code = ${code})`.execute(testDb);
+}
+
+/** GET /api/bookings/:id with the clock set to `now`. */
+export async function getBooking(id: string, now: Date = BEFORE_FESTIVAL) {
+  vi.setSystemTime(now);
+  const response = await GET(new Request(`http://localhost/api/bookings/${id}`), {
+    params: Promise.resolve({ id }),
+  });
+  const text = await response.text();
+  return { response, status: response.status, text, json: JSON.parse(text) as unknown };
+}
+
+/** `minutes` after `from`. */
+export const after = (from: Date, minutes: number, seconds = 0) =>
+  new Date(from.getTime() + (minutes * 60 + seconds) * 1000);
+
+export async function promoUses(code: string): Promise<number> {
+  const row = await testDb
+    .selectFrom("promo_codes")
+    .select("times_redeemed")
+    .where("code", "=", code)
+    .executeTakeFirstOrThrow();
+  return row.times_redeemed;
 }

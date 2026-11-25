@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { BookingRequest, Email, IdempotencyKey, PersonName, Phone } from "./booking";
+import {
+  BookingRequest,
+  BookingResponse,
+  Email,
+  IdempotencyKey,
+  PersonName,
+  Phone,
+} from "./booking";
 import { fieldErrors } from "./common";
 
 const valid = {
@@ -150,5 +157,38 @@ describe("field errors", () => {
       { path: "booker.phone", message: "Please enter a valid phone number." },
       { path: "attendees[0].fullName", message: "Please enter a name." },
     ]);
+  });
+});
+
+describe("BookingResponse", () => {
+  const response = {
+    id: "8b1c6c1e-6d0c-4b41-9b7a-2f8d5d6e2a11",
+    event: { slug: "sharad-utsav-2026", name: "Sharad Utsav 2026" },
+    reference: "SU26-ZAVQ5Q",
+    status: "pending_payment",
+    holdExpiresAt: "2026-11-25T18:15:00.000Z",
+    currency: "USD",
+    lines: [],
+    subtotalCents: 0,
+    discountCents: 0,
+    totalCents: 0,
+    promoCode: null,
+    attendees: [{ fullName: "Asha Patel", ageYears: 40, productCode: null, days: [] }],
+  };
+
+  it("drops contact details and internal fields even if they reach it", () => {
+    const leaky = {
+      ...response,
+      contactEmail: "asha@example.com",
+      contactPhone: "214 555 0100",
+      idempotencyKey: "x",
+      stripePaymentIntentId: "pi_123",
+      attendees: [{ ...response.attendees[0], phone: "214 555 0100", id: "uuid" }],
+    };
+    expect(BookingResponse.parse(leaky)).toEqual(response);
+  });
+
+  it("only allows the four statuses", () => {
+    expect(BookingResponse.safeParse({ ...response, status: "paid" }).success).toBe(false);
   });
 });

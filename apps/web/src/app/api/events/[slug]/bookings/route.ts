@@ -2,6 +2,7 @@ import { BookingRequest, BookingResponse, EventSlug, IdempotencyKey } from "@tic
 import { formatCents } from "@ticketing/domain";
 import { loadBookingView } from "@/server/bookings/booking-view";
 import { createBooking } from "@/server/bookings/create-booking";
+import { releaseExpiredHolds } from "@/server/bookings/release-holds";
 import { loadEventCatalog } from "@/server/catalog/load-catalog";
 import { getDb } from "@/server/db";
 import {
@@ -46,6 +47,9 @@ export async function POST(
 
   try {
     const db = getDb();
+    const now = new Date();
+    // Stock held by unpaid bookings whose time ran out is back on sale before we take any.
+    await releaseExpiredHolds(db, { now });
     const eventCatalog = await loadEventCatalog(db, slug);
     if (!eventCatalog) return eventNotFound();
 
@@ -53,7 +57,7 @@ export async function POST(
       eventCatalog,
       request: body.data,
       idempotencyKey: key.data,
-      now: new Date(),
+      now,
     });
 
     switch (result.kind) {

@@ -64,14 +64,23 @@ export type BookingRequest = z.output<typeof BookingRequest>;
 
 export const BookingStatus = z.enum(["pending_payment", "confirmed", "expired", "cancelled"]);
 
-/** A booking as the family sees it. Contact details are not echoed back. */
+/** A booking's id: a random UUID, unguessable, so it can be the confirmation page's address. */
+export const BookingId = z.uuid();
+
+/**
+ * A booking as the family sees it: from POST /api/events/:slug/bookings and
+ * GET /api/bookings/:id. Contact details are not echoed back.
+ */
 export const BookingResponse = z.object({
-  /** Unguessable; the confirmation page's address. */
-  id: z.uuid(),
+  id: BookingId,
+  event: z.object({ slug: z.string(), name: z.string() }),
   /** Short code read out at the door, e.g. "SU26-7K3QX". */
   reference: z.string(),
   status: BookingStatus,
-  /** Until then the tickets are held for this booking; unpaid after that, they are released. */
+  /**
+   * While `pending_payment`, the tickets are held until this time. Unpaid after that, the
+   * booking becomes `expired` and its tickets go back on sale.
+   */
   holdExpiresAt: z.iso.datetime(),
   currency: z.string().length(3),
   lines: z.array(QuoteLine),

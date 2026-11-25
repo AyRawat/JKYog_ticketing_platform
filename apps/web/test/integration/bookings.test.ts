@@ -48,6 +48,7 @@ describe("POST /api/events/:slug/bookings", () => {
 
       expect(booking).toEqual({
         id: expect.stringMatching(/^[0-9a-f-]{36}$/) as string,
+        event: { slug: "sharad-utsav-2026", name: "Sharad Utsav 2026" },
         reference: expect.stringMatching(/^SU26-[2-9A-HJKMNP-TV-Z]{6}$/) as string,
         status: "pending_payment",
         holdExpiresAt: "2026-11-25T18:15:00.000Z",
