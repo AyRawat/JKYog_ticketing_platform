@@ -31,5 +31,9 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm db:migrate && pnpm db:seed
       - run: pnpm test
+      # Builds sharad_utsav_test from the migrations and seed, then runs the route handlers on it.
+      - run: pnpm test:integration
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/sharad_utsav_test
+      - run: pnpm build

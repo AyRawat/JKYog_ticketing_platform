@@ -9,6 +9,8 @@ const SEEDS_DIR = path.join(packageRoot, "seeds");
 const SEEDED_EVENT_SLUG = "sharad-utsav-2026";
 const MIGRATION_LOCK_ID = 7_202_612; // arbitrary, shared by all migration runners
 
+type Log = (message: string) => void;
+
 /**
  * Scripts (migrate/seed/reset/codegen) prefer the DIRECT connection: migrations use a
  * session-level advisory lock, which Neon's PgBouncer pooler (transaction mode) can't hold.
@@ -46,7 +48,7 @@ async function sqlFiles(dir: string): Promise<string[]> {
 }
 
 /** Applies each not-yet-applied migrations/*.sql file, in order, one transaction per file. */
-export async function runMigrations(client: pg.Client): Promise<void> {
+export async function runMigrations(client: pg.Client, log: Log = console.log): Promise<void> {
   await client.query("SELECT pg_advisory_lock($1)", [MIGRATION_LOCK_ID]);
   try {
     await client.query(
@@ -67,27 +69,25 @@ export async function runMigrations(client: pg.Client): Promise<void> {
         await client.query(sql);
         await client.query("INSERT INTO schema_migrations (version) VALUES ($1)", [file]);
       });
-      console.log(`migrate: applied ${file}`);
+      log(`migrate: applied ${file}`);
     }
-    console.log("migrate: up to date");
+    log("migrate: up to date");
   } finally {
     await client.query("SELECT pg_advisory_unlock($1)", [MIGRATION_LOCK_ID]);
   }
 }
 
 /** Loads seeds/*.sql in one transaction. Skips if the festival is already seeded. */
-export async function runSeeds(client: pg.Client): Promise<void> {
+export async function runSeeds(client: pg.Client, log: Log = console.log): Promise<void> {
   const existing = await client.query("SELECT 1 FROM events WHERE slug = $1", [SEEDED_EVENT_SLUG]);
   if (existing.rowCount) {
-    console.log(
-      `seed: '${SEEDED_EVENT_SLUG}' already present, skipping (use db:reset to start over)`,
-    );
+    log(`seed: '${SEEDED_EVENT_SLUG}' already present, skipping (use db:reset to start over)`);
     return;
   }
   await inTransaction(client, async () => {
     for (const file of await sqlFiles(SEEDS_DIR)) {
       await client.query(await readFile(path.join(SEEDS_DIR, file), "utf8"));
-      console.log(`seed: applied ${file}`);
+      log(`seed: applied ${file}`);
     }
   });
 }

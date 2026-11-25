@@ -2,6 +2,7 @@
 // No I/O and no framework imports, so every rule is unit-tested in isolation.
 
 export { quoteCart, type Quote } from "./quote";
+export { catalogAvailability, type Availability, type CatalogAvailability } from "./availability";
 export {
   ageBand,
   bandAgeRange,

@@ -14,6 +14,7 @@
     "format:check": "prettier --check . --ignore-path .gitignore --ignore-path .prettierignore --ignore-path .git/info/exclude",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
     "db:migrate": "pnpm --filter @ticketing/db migrate",
     "db:seed": "pnpm --filter @ticketing/db seed",
     "db:reset": "pnpm --filter @ticketing/db reset",
