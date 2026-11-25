@@ -38,12 +38,14 @@ SELECT p.id, v.remaining FROM products p JOIN (VALUES
   ('DINNER_PLATE', 1700), ('GARBA_WORKSHOP', 2)
 ) AS v(code, remaining) ON v.code = p.code;
 
+-- Validity windows use the event's timezone by name, so daylight saving is handled by Postgres
+-- (Allen is UTC-5 in October but UTC-6 from 1 Nov).
 INSERT INTO promo_codes (event_id, code, discount_type, percent_bps, amount_cents, valid_from, valid_until, max_redemptions, times_redeemed)
 SELECT id, v.* FROM events, (VALUES
   ('SEVA10'::citext, 'percent_off_total'::discount_type, 1000, NULL::int, NULL::timestamptz, NULL::timestamptz, NULL::int, 0),
   ('FLAT20',   'amount_off_total',  NULL, 2000, NULL, NULL, NULL, 0),
   ('KIDSFREE', 'child_entry_free',  NULL, NULL, NULL, NULL, NULL, 0),
-  ('EXPIRED5', 'amount_off_total',  NULL, 500,  '2026-10-01T00:00:00-05', '2026-11-30T23:59:59-05', NULL, 0),
+  ('EXPIRED5', 'amount_off_total',  NULL, 500,  '2026-10-01 00:00:00 America/Chicago', '2026-11-30 23:59:59.999999 America/Chicago', NULL, 0),
   ('MAXEDOUT', 'percent_off_total', 1500, NULL, NULL, NULL, 50, 50)
 ) AS v(code, discount_type, percent_bps, amount_cents, valid_from, valid_until, max_redemptions, times_redeemed)
 WHERE events.slug = 'sharad-utsav-2026';
