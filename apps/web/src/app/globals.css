@@ -40,3 +40,14 @@ h2,
 h3 {
   text-wrap: balance;
 }
+
+/* Receipts print black on white: no dark page of ink, and readable on any printer. */
+@media print {
+  *,
+  *::before,
+  *::after {
+    color: #000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
