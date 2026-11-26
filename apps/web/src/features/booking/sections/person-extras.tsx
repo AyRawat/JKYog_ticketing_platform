@@ -65,7 +65,11 @@ function DayExtra({ product, person, who }: ExtraProps) {
   // With no days yet the whole block waits under its own note, so no "add a day" hint here.
   else if (attending.size > 0 && !anyOpen)
     hint = `Runs ${shortDayList(product.availableDays)}. Add one of those days to ${who.possessive} ticket to join.`;
-  else if (onlySomeDays) hint = `Runs ${shortDayList(product.availableDays)} only.`;
+  else if (anyOpen) {
+    // The day chips are how you add it, which isn't obvious from a row of dates.
+    const pick = "Select the days you want it.";
+    hint = onlySomeDays ? `Runs ${shortDayList(product.availableDays)} only. ${pick}` : pick;
+  } else if (onlySomeDays) hint = `Runs ${shortDayList(product.availableDays)} only.`;
 
   return (
     <fieldset
