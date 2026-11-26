@@ -7,7 +7,7 @@ import { fieldDomId, fieldGroupId, fieldKey } from "../state/fields";
 import { familyMembers, personAgeText } from "../state/reducer";
 import { findEntryProduct } from "../state/ticket-for-age";
 import type { Person } from "../state/types";
-import { Chip, focusRing } from "../ui/controls";
+import { Chip, CloseButton, focusRing } from "../ui/controls";
 import { FieldMessages, useMessageId } from "../ui/field-messages";
 import { bandLabel, dayLabel, formatPrice, shortDayLabel } from "../ui/format";
 import { TextField } from "../ui/text-field";
@@ -60,10 +60,18 @@ export function FamilyCard({ familyId, onPersonAdded }: FamilyCardProps) {
             same days
           </p>
         </div>
-        <p className="shrink-0 font-semibold text-bright-gold tabular-nums">
-          {formatPrice(product.unitPriceCents)}
-          <span className="font-normal"> / day</span>
-        </p>
+        <div className="flex shrink-0 items-center gap-2">
+          <p className="font-semibold text-bright-gold tabular-nums">
+            {formatPrice(product.unitPriceCents)}
+            <span className="font-normal"> / day</span>
+          </p>
+          <CloseButton
+            label={`Remove the ${product.name}. Anyone you've named stays as a separate card.`}
+            onClick={() => {
+              dispatch({ type: "familySplit", familyId });
+            }}
+          />
+        </div>
       </div>
 
       <div className="space-y-6 p-5 sm:p-6">

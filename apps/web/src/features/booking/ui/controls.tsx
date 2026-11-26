@@ -151,3 +151,20 @@ export function SectionHeading({ id, children }: { id: string; children: ReactNo
     </h2>
   );
 }
+
+/** A × in a card's corner that takes the card away. `label` says exactly what goes. */
+export function CloseButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={`grid size-10 shrink-0 place-items-center rounded-lg text-white/65 transition-colors hover:bg-white/10 hover:text-white ${focusRing}`}
+    >
+      <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 fill-current">
+        <path d="M3.7 2.3 8 6.6l4.3-4.3 1.4 1.4L9.4 8l4.3 4.3-1.4 1.4L8 9.4l-4.3 4.3-1.4-1.4L6.6 8 2.3 3.7z" />
+      </svg>
+    </button>
+  );
+}

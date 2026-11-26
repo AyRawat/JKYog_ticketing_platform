@@ -7,7 +7,7 @@ import { fieldDomId, fieldKey } from "../state/fields";
 import { personAgeText } from "../state/reducer";
 import { findEntryProduct } from "../state/ticket-for-age";
 import type { Person } from "../state/types";
-import { focusRing } from "../ui/controls";
+import { CloseButton, focusRing } from "../ui/controls";
 import { bandLabel, dayLabel, shortDayList } from "../ui/format";
 import { TextField } from "../ui/text-field";
 import { PersonExtrasFields } from "./person-extras";
@@ -34,6 +34,13 @@ export function PersonCard({ person, position, focusName }: PersonCardProps) {
   const hasProblems = [...messages.keys()].some((key) => key.startsWith(`person:${person.id}.`));
   // A folded card with problems opens itself once they are showing, so none stay hidden.
   const expanded = open || hasProblems;
+  const remove = () => {
+    dispatch(
+      isBooker
+        ? { type: "bookerAttendingSet", attending: false, replacementId: crypto.randomUUID() }
+        : { type: "personRemoved", id: person.id },
+    );
+  };
 
   return (
     <li
@@ -52,16 +59,26 @@ export function PersonCard({ person, position, focusName }: PersonCardProps) {
             {band ? bandLabel(band, ageRules) : "Age needed"}
           </p>
         </div>
-        <button
-          type="button"
-          aria-expanded={expanded}
-          onClick={() => {
-            setOpen(!expanded);
-          }}
-          className={`shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-bright-gold hover:bg-white/5 ${focusRing}`}
-        >
-          {expanded ? "Done" : "Edit"}
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => {
+              setOpen(!expanded);
+            }}
+            className={`shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-bright-gold hover:bg-white/5 ${focusRing}`}
+          >
+            {expanded ? "Done" : "Edit"}
+          </button>
+          <CloseButton
+            label={
+              isBooker
+                ? "Remove yourself: you're not coming"
+                : `Remove ${name || `person ${String(position)}`}`
+            }
+            onClick={remove}
+          />
+        </div>
       </div>
 
       {!expanded ? (
@@ -128,26 +145,6 @@ export function PersonCard({ person, position, focusName }: PersonCardProps) {
               <PersonExtrasFields person={person} firstName={firstName} />
             </>
           )}
-
-          <div className="border-t border-white/10 pt-4">
-            <button
-              type="button"
-              onClick={() => {
-                dispatch(
-                  isBooker
-                    ? {
-                        type: "bookerAttendingSet",
-                        attending: false,
-                        replacementId: crypto.randomUUID(),
-                      }
-                    : { type: "personRemoved", id: person.id },
-                );
-              }}
-              className={`rounded-lg px-1 py-1 text-sm text-white/65 underline-offset-4 hover:text-error-text hover:underline ${focusRing}`}
-            >
-              {isBooker ? "I'm not coming" : `Remove ${firstName}`}
-            </button>
-          </div>
         </div>
       )}
     </li>
