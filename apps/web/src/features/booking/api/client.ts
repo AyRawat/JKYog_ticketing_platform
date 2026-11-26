@@ -1,6 +1,7 @@
 import {
   BookingResponse,
   ErrorResponse,
+  PaymentResponse,
   QuoteResponse,
   type BookingRequestInput,
   type QuoteRequestInput,
@@ -49,6 +50,18 @@ export function createBooking(
     method: "POST",
     body: request,
     headers: { "Idempotency-Key": idempotencyKey },
+    signal,
+  });
+}
+
+/** Starts the card payment for a held booking, or returns the one already started. */
+export function startPayment(
+  bookingId: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<PaymentResponse>> {
+  return send(`/api/bookings/${encodeURIComponent(bookingId)}/payment`, PaymentResponse, {
+    method: "POST",
+    body: {},
     signal,
   });
 }

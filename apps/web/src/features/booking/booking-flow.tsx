@@ -3,6 +3,7 @@
 import type { CatalogResponse } from "@ticketing/contracts";
 import { useMemo, useReducer } from "react";
 import { useLiveQuote } from "./api/use-live-quote";
+import { useCheckout } from "./checkout/use-checkout";
 import { BookingContext, type BookingContextValue } from "./booking-context";
 import { BookerSection } from "./sections/booker-section";
 import { GroupSection } from "./sections/group-section";
@@ -40,10 +41,19 @@ export function BookingFlow({ catalog }: BookingFlowProps) {
       extras: draft.request.extras ?? [],
     });
   }, [live.latest]);
+  const checkout = useCheckout(catalog.event.slug, state, {
+    requote: live.retry,
+    onInvalid: () => {
+      dispatch({ type: "payAttempted" });
+    },
+  });
+  const { bookingErrors } = checkout;
   const messages = useMemo(
-    () => visibleMessages(mergeMessages(local, fromServer), state),
-    [local, fromServer, state],
+    () => visibleMessages(mergeMessages(local, fromServer, bookingErrors), state),
+    [local, fromServer, bookingErrors, state],
   );
+  // While the booking is being made or paid for, the form can't change under it.
+  const locked = checkout.state.phase !== "editing";
 
   const context = useMemo<BookingContextValue>(
     () => ({ catalog, state, dispatch, messages }),
@@ -54,12 +64,15 @@ export function BookingFlow({ catalog }: BookingFlowProps) {
     <BookingContext value={context}>
       <PriceList />
       <div className="mt-10 grid gap-12 lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-start lg:gap-10">
-        <div className="space-y-12">
+        <div
+          className={`space-y-12 transition-opacity ${locked ? "opacity-50" : ""}`}
+          inert={locked}
+        >
           <BookerSection />
           <GroupSection />
         </div>
         <aside id="order" className="scroll-mt-6 lg:sticky lg:top-6">
-          <OrderSummary live={live} locallyValid={local.size === 0} />
+          <OrderSummary live={live} locallyValid={local.size === 0} checkout={checkout} />
         </aside>
       </div>
       <MobileTotalBar live={live} />

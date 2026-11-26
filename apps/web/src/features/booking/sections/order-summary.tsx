@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { PaymentPanel } from "../checkout/payment-panel";
+import type { Checkout } from "../checkout/use-checkout";
 import type { LiveQuote } from "../api/use-live-quote";
 import { useBooking } from "../booking-context";
 import type { QuoteResponse } from "@ticketing/contracts";
@@ -15,15 +17,16 @@ interface OrderSummaryProps {
   readonly live: LiveQuote;
   /** True when nothing the browser can check is wrong either. */
   readonly locallyValid: boolean;
+  readonly checkout: Checkout;
 }
 
 /** The server's bill, the promo code, and the pay button. Every amount here is the quote's. */
-export function OrderSummary({ live, locallyValid }: OrderSummaryProps) {
+export function OrderSummary({ live, locallyValid, checkout }: OrderSummaryProps) {
   const { state, dispatch, messages } = useBooking();
   const summaryRef = useRef<HTMLDivElement>(null);
-  const [readyNote, setReadyNote] = useState(false);
   const quote = live.latest?.quote;
   const ready = Boolean(quote?.canBook) && locallyValid && !live.stale && live.problem === null;
+  const { phase } = checkout.state;
 
   return (
     <section
@@ -80,7 +83,10 @@ export function OrderSummary({ live, locallyValid }: OrderSummaryProps) {
           </ul>
         )}
 
-        <PromoField quote={quote} />
+        {/* No changing the code once the booking is being made or paid for. */}
+        <fieldset disabled={phase !== "editing"} className="disabled:opacity-60">
+          <PromoField quote={quote} />
+        </fieldset>
 
         {quote && (
           <dl className="mt-5 space-y-1.5 border-t border-white/15 pt-4 text-sm">
@@ -105,37 +111,64 @@ export function OrderSummary({ live, locallyValid }: OrderSummaryProps) {
       </div>
 
       <div ref={summaryRef} tabIndex={-1} className="outline-none">
-        {state.payAttempted && !ready && <ErrorSummary state={state} messages={messages} />}
+        {state.payAttempted && !ready && phase === "editing" && (
+          <ErrorSummary state={state} messages={messages} />
+        )}
       </div>
 
-      {readyNote && ready && (
+      {checkout.state.phase === "editing" && checkout.state.notice && (
         <p
-          role="status"
-          className="mt-4 rounded-xl bg-success/15 px-4 py-3 text-sm text-success-text"
+          role="alert"
+          className={`mt-4 flex gap-2 rounded-xl px-4 py-3 text-sm ${
+            checkout.state.notice.tone === "error"
+              ? "border border-error/70 bg-error/10 text-error-text"
+              : "bg-white/10 text-white"
+          }`}
         >
-          Everything checks out. Payment is the next piece being built.
+          {checkout.state.notice.tone === "error" && <ErrorIcon />}
+          {checkout.state.notice.text}
         </p>
       )}
 
-      <button
-        type="button"
-        disabled={!quote}
-        onClick={() => {
-          dispatch({ type: "payAttempted" });
-          if (ready) {
-            setReadyNote(true);
-          } else {
-            // Wait a frame for the summary to render, then take the reader there.
-            requestAnimationFrame(() => summaryRef.current?.focus());
-          }
-        }}
-        className={`mt-5 h-14 w-full rounded-xl bg-primary text-lg font-semibold text-heading transition-colors hover:bg-bright-gold disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`}
-      >
-        {quote && quote.totalCents > 0 ? `Pay ${formatCents(quote.totalCents)}` : "Book"}
-      </button>
-      <p className="mt-2 text-center text-xs text-white/65">
-        Prices are checked again when you pay. Tickets are held for 15 minutes while you do.
-      </p>
+      {checkout.state.phase === "paying" ? (
+        <PaymentPanel
+          booking={checkout.state.booking}
+          clientSecret={checkout.state.clientSecret}
+          amountCents={checkout.state.amountCents}
+          onPaid={checkout.paid}
+          onChangeBooking={checkout.changeBooking}
+          onHoldEnded={checkout.holdEnded}
+        />
+      ) : (
+        <>
+          <button
+            type="button"
+            disabled={!quote || phase !== "editing"}
+            aria-busy={phase !== "editing"}
+            onClick={() => {
+              dispatch({ type: "payAttempted" });
+              if (ready && quote) {
+                void checkout.pay(quote.totalCents);
+              } else {
+                // Wait a frame for the summary to render, then take the reader there.
+                requestAnimationFrame(() => summaryRef.current?.focus());
+              }
+            }}
+            className={`mt-5 h-14 w-full rounded-xl bg-primary text-lg font-semibold text-heading transition-colors hover:bg-bright-gold disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`}
+          >
+            {phase === "submitting"
+              ? "Holding your tickets…"
+              : phase === "done"
+                ? "Opening your booking…"
+                : quote && quote.totalCents > 0
+                  ? `Pay ${formatCents(quote.totalCents)}`
+                  : "Book"}
+          </button>
+          <p className="mt-2 text-center text-xs text-white/65">
+            Prices are checked again when you pay. Tickets are held for 15 minutes while you do.
+          </p>
+        </>
+      )}
     </section>
   );
 }
