@@ -12,6 +12,8 @@ The brief has the festival on 10–14 Nov 2026, but those dates have already pas
 2. Under-5s are added to the booking but don't get a ticket. They are free, but they still need to be counted for the headcount at the door.
 3. The person making the booking has to be 18 or older, but they don't have to attend. For example, a grandparent can book for the whole family, so the contact details are stored on the booking and not on a ticket.
 4. For children I only take name and age. A nine year old won't have a phone number or email anyway.
+5. Toddlers are excluded from the extra services (workshops and dinner).
+6. Extras for a day can only be bought for someone who has an entry ticket for that day.
 
 ### Promo codes
 
@@ -338,3 +340,21 @@ Promo statuses (inside a quote, or as an error when booking):
 3. **Admin panel.** Prices, stock and promo codes are set using a seed script. The data model can support an admin screen later.
 4. **Door check-in app.** The `admissions` table and its `scanned_at` column are ready, and can be used to build the scanner app for the door later.
 5. **Real emails, unless I have time left.** The confirmation is shown on screen along with the booking reference.
+
+## 5. Things I did not do
+
+### No government ID
+
+I decided not to ask for any form of ID.
+
+An ID would help in one place. Two different people can share a name, and an ID would let us stop one person from buying several Family Passes for the same day. But the cost outweighs that benefit:
+
+- **IDs vary.** To be fair to everyone, we would need an "ID type" field and support for several kinds of ID. Accepting only US IDs would shut out foreign nationals who want to attend the festival just as much.
+- **Verification is extra work.** An ID number we can't check proves nothing, and checking it means a separate verification step and service.
+- **It's sensitive data.** Storing ID numbers turns a ticket site into a store of personal documents, with the security and legal duties that come with that.
+
+The problems an ID seems to solve are handled in other ways:
+
+- **Overselling and double payment** are prevented by guarded stock updates, idempotency keys and Stripe webhook de-duplication. Identity doesn't help there.
+- **Abuse** such as bulk holds and promo-code guessing is held back by per-visitor rate limits.
+- **At the door**, a volunteer can look at any photo ID matching the booker's name without us ever storing it.
