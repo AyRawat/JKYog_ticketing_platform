@@ -29,21 +29,19 @@ The festival runs **Thu 10 Dec – Mon 14 Dec 2026** (the brief's November dates
 
 ## 2. Tickets and days
 
-| Case                                                 | What happens                                                                                                      | Checked by                |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| No days picked yet                                   | "When are you coming?" comes first. "Your group" is locked until a day is picked, and Pay asks only for the days. | Unit, Manual              |
-| Days picked for the group                            | New tickets start on those days. Each person can untick a day they're not coming.                                 | Unit, Manual              |
-| A group day removed later                            | It comes off everyone, with their dinner and Garba on that day.                                                   | Unit, Manual              |
-| A group day added later                              | Existing people are left as they are; they tick it if they want it.                                               | Unit, Manual              |
-| Day Pass with no days                                | "Please pick at least one day." The server refuses it too.                                                        | Unit                      |
-| The same day sent twice (edited request)             | Refused.                                                                                                          | Unit                      |
-| Days sent out of order                               | Accepted, billed in date order.                                                                                   | Unit                      |
-| All-Day Pass with days sent anyway                   | Refused: an all-day pass takes no days.                                                                           | Unit                      |
-| All-Day Pass – Adult (sold out)                      | Shown as sold out in the price list and disabled in every card. The server refuses it.                            | Unit, Integration, Manual |
-| An unknown ticket code, or an extra sent as a ticket | Refused at that person's ticket field.                                                                            | Unit, Integration         |
-| One person admitted twice on the same day            | Refused.                                                                                                          | Unit                      |
-| During the festival (e.g. on 12 Dec)                 | Past days can't be picked; all-day passes stop selling once the festival starts.                                  | Unit, Integration         |
-| The date at midnight                                 | Dates use Allen's timezone, not UTC: 11 pm on 9 Dec in Allen is still before the festival.                        | Unit                      |
+| Case                                                 | What happens                                                                                                             | Checked by                |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------- |
+| A ticket chosen but no days picked                   | That person's extras stay disabled ("Pick your days first.") and "Add another person" is disabled until they have a day. | Manual                    |
+| A Family Pass with no days picked                    | The family's places stay disabled until a day is picked ("Pick the family's days first.").                               | Manual                    |
+| Day Pass with no days                                | "Please pick at least one day." The server refuses it too.                                                               | Unit                      |
+| The same day sent twice (edited request)             | Refused.                                                                                                                 | Unit                      |
+| Days sent out of order                               | Accepted, billed in date order.                                                                                          | Unit                      |
+| All-Day Pass with days sent anyway                   | Refused: an all-day pass takes no days.                                                                                  | Unit                      |
+| All-Day Pass – Adult (sold out)                      | Shown as sold out in the price list and disabled in every card. The server refuses it.                                   | Unit, Integration, Manual |
+| An unknown ticket code, or an extra sent as a ticket | Refused at that person's ticket field.                                                                                   | Unit, Integration         |
+| One person admitted twice on the same day            | Refused.                                                                                                                 | Unit                      |
+| During the festival (e.g. on 12 Dec)                 | Past days can't be picked; all-day passes stop selling once the festival starts.                                         | Unit, Integration         |
+| The date at midnight                                 | Dates use Allen's timezone, not UTC: 11 pm on 9 Dec in Allen is still before the festival.                               | Unit                      |
 
 ## 3. Family Pass
 
