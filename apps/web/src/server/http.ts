@@ -88,7 +88,7 @@ function fail(response: Response): { ok: false; response: Response } {
 }
 
 /** The body as text, or null as soon as it passes `maxBytes`. */
-async function readTextWithLimit(
+export async function readTextWithLimit(
   request: Request,
   maxBytes: number,
 ): Promise<string | null> {

@@ -30,7 +30,7 @@ function fakeStripe(existing?: ReturnType<typeof intent>) {
 describe("stripeGateway.paymentForBooking", () => {
   it("creates the payment for the booking's stored total, once per booking", async () => {
     const { stripe, create } = fakeStripe();
-    const payment = await stripeGateway(stripe).paymentForBooking(input);
+    const payment = await stripeGateway(stripe, undefined).paymentForBooking(input);
 
     expect(payment).toEqual({ intentId: "pi_new", clientSecret: "pi_new_secret_1" });
     expect(create).toHaveBeenCalledWith(
@@ -49,7 +49,7 @@ describe("stripeGateway.paymentForBooking", () => {
     const { stripe, create, retrieve } = fakeStripe(
       intent({ id: "pi_old", client_secret: "pi_old_secret" }),
     );
-    const payment = await stripeGateway(stripe).paymentForBooking({
+    const payment = await stripeGateway(stripe, undefined).paymentForBooking({
       ...input,
       existingIntentId: "pi_old",
     });
@@ -65,7 +65,7 @@ describe("stripeGateway.paymentForBooking", () => {
     ["a cancelled payment", { status: "canceled" as const }],
   ])("starts again instead of reusing %s", async (_, fields) => {
     const { stripe, create } = fakeStripe(intent({ id: "pi_old", ...fields }));
-    await stripeGateway(stripe).paymentForBooking({
+    await stripeGateway(stripe, undefined).paymentForBooking({
       ...input,
       existingIntentId: "pi_old",
     });
@@ -75,7 +75,7 @@ describe("stripeGateway.paymentForBooking", () => {
   it("reports any Stripe failure as a provider error", async () => {
     const { stripe, create } = fakeStripe();
     create.mockRejectedValue(new Error("connection reset"));
-    await expect(stripeGateway(stripe).paymentForBooking(input)).rejects.toBeInstanceOf(
+    await expect(stripeGateway(stripe, undefined).paymentForBooking(input)).rejects.toBeInstanceOf(
       PaymentProviderError,
     );
   });
@@ -83,7 +83,7 @@ describe("stripeGateway.paymentForBooking", () => {
   it("refuses a payment with no client secret", async () => {
     const { stripe, create } = fakeStripe();
     create.mockResolvedValue(intent({ client_secret: null }));
-    await expect(stripeGateway(stripe).paymentForBooking(input)).rejects.toBeInstanceOf(
+    await expect(stripeGateway(stripe, undefined).paymentForBooking(input)).rejects.toBeInstanceOf(
       PaymentProviderError,
     );
   });

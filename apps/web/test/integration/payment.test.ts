@@ -22,6 +22,10 @@ vi.mock("@/server/payments/gateway", async (importOriginal) => {
         const intentId = input.existingIntentId ?? `pi_${input.bookingId.slice(0, 8)}`;
         return Promise.resolve({ intentId, clientSecret: `${intentId}_secret_test` });
       },
+      parsePaymentEvent: () => {
+        throw new Error("not used here");
+      },
+      refundPayment: () => Promise.reject(new Error("not used here")),
     }),
   };
 });

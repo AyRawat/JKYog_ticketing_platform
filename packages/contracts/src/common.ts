@@ -26,6 +26,7 @@ export const ERROR_CODES = [
   "PROMO_UNAVAILABLE",
   "IDEMPOTENCY_KEY_REUSED",
   "PAYMENT_UNAVAILABLE",
+  "WEBHOOK_SIGNATURE_INVALID",
   "INTERNAL_ERROR",
 ] as const;
 export const ErrorCode = z.enum(ERROR_CODES);
