@@ -5,6 +5,7 @@ import { useBooking } from "../booking-context";
 import { fieldGroupId, fieldKey } from "../state/fields";
 import { focusRing, SectionHeading } from "../ui/controls";
 import { FieldMessages } from "../ui/field-messages";
+import { FamilyCard } from "./family-card";
 import { PersonCard } from "./person-card";
 
 /** Everyone coming, one card each, and the way to add another. */
@@ -28,14 +29,28 @@ export function GroupSection() {
 
       {state.people.length > 0 && (
         <ol className="space-y-4">
-          {state.people.map((person, index) => (
-            <PersonCard
-              key={person.id}
-              person={person}
-              position={index + 1}
-              focusName={person.id === justAdded}
-            />
-          ))}
+          {state.people.map((person, index) => {
+            const { family } = person;
+            if (!family) {
+              return (
+                <PersonCard
+                  key={person.id}
+                  person={person}
+                  position={index + 1}
+                  focusName={person.id === justAdded}
+                />
+              );
+            }
+            // A family shows once, as one card, where its first member is.
+            const first = state.people.find((p) => p.family?.familyId === family.familyId);
+            return first?.id === person.id ? (
+              <FamilyCard
+                key={family.familyId}
+                familyId={family.familyId}
+                onPersonAdded={setJustAdded}
+              />
+            ) : null;
+          })}
         </ol>
       )}
 

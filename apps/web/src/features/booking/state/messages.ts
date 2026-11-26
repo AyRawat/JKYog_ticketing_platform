@@ -1,7 +1,9 @@
 import { Email, PersonName, Phone, type CatalogResponse } from "@ticketing/contracts";
+import { bandAgeRange, type AgeBand, type AgeRules } from "@ticketing/domain";
 import type { z } from "zod";
 import { bandForAgeText, parseAgeText } from "./age-input";
 import { fieldKey } from "./fields";
+import { personAgeText } from "./reducer";
 import type { BookingState } from "./types";
 
 // What the form says is wrong, and when it says it.
@@ -33,13 +35,21 @@ export function localMessages(state: BookingState, catalog: CatalogResponse): Me
   add(fieldKey.booker("phone"), firstError(Phone, booker.phone));
   if (parseAgeText(booker.ageText) === null) add(fieldKey.booker("ageYears"), typedAgeMessage);
 
+  const { ageRules } = catalog.event;
   for (const person of state.people) {
+    if (person.family) {
+      const band = bandForAgeText(personAgeText(state, person), ageRules);
+      add(
+        fieldKey.person(person.id, "ageYears"),
+        placeMismatch(person.family.role, band, ageRules),
+      );
+    }
     if (person.kind === "booker") continue;
     add(fieldKey.person(person.id, "fullName"), firstError(PersonName, person.fullName));
     if (parseAgeText(person.ageText) === null) {
       add(fieldKey.person(person.id, "ageYears"), typedAgeMessage);
     }
-    const isAdult = bandForAgeText(person.ageText, catalog.event.ageRules) === "adult";
+    const isAdult = bandForAgeText(person.ageText, ageRules) === "adult";
     if (isAdult && person.phone.trim()) {
       add(fieldKey.person(person.id, "phone"), firstError(Phone, person.phone));
     }
@@ -49,6 +59,19 @@ export function localMessages(state: BookingState, catalog: CatalogResponse): Me
     add(fieldKey.people, "Please add at least one person who is coming.");
   }
   return found;
+}
+
+/** Why a typed age doesn't fit a family place, or null when it does (or isn't typed yet). */
+function placeMismatch(
+  role: "adult" | "child",
+  band: AgeBand | null,
+  rules: AgeRules,
+): string | null {
+  if (band === null || band === role) return null;
+  if (band === "infant") {
+    return `Under ${String(rules.childMinAge)}s come free without a ticket. Add them with "Add a person" instead, and put someone ${bandAgeRange(role, rules)} here.`;
+  }
+  return `This place is for ${role === "adult" ? "an adult" : "a child"}, ${bandAgeRange(role, rules)}.`;
 }
 
 /** Both sources together, local first, without repeating a message on the same field. */

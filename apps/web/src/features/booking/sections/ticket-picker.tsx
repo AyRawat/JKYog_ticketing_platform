@@ -3,6 +3,7 @@
 import { bandAgeRange, type TicketedBand } from "@ticketing/domain";
 import { useBooking } from "../booking-context";
 import { fieldGroupId, fieldKey } from "../state/fields";
+import { isSharedPass } from "../state/reducer";
 import { admitsBand, type CatalogEntryProduct } from "../state/ticket-for-age";
 import type { Person } from "../state/types";
 import { Chip } from "../ui/controls";
@@ -45,7 +46,19 @@ export function TicketPicker({ person, band, firstName }: TicketPickerProps) {
                   disabled={reason !== null}
                   className="sr-only"
                   onChange={() => {
-                    dispatch({ type: "ticketChosen", id: person.id, productCode: product.code });
+                    if (isSharedPass(product)) {
+                      // One card for the whole family: the other places open in it.
+                      const places = product.admits.adults + product.admits.children;
+                      dispatch({
+                        type: "familyStarted",
+                        id: person.id,
+                        productCode: product.code,
+                        familyId: crypto.randomUUID(),
+                        newIds: Array.from({ length: places - 1 }, () => crypto.randomUUID()),
+                      });
+                    } else {
+                      dispatch({ type: "ticketChosen", id: person.id, productCode: product.code });
+                    }
                     dispatch({ type: "fieldTouched", key: ticketKey });
                   }}
                 />
@@ -118,7 +131,7 @@ function unavailableReason(
 function ticketNote(product: CatalogEntryProduct, festivalDays: number): string {
   const { adults, children } = product.admits;
   if (adults > 0 && children > 0) {
-    return `Shared: covers ${String(adults)} adults + ${String(children)} children a day`;
+    return `${String(adults)} adults + ${String(children)} children together, per day`;
   }
   return product.dayScope === "whole_event" ? `All ${String(festivalDays)} days` : "Pick your days";
 }

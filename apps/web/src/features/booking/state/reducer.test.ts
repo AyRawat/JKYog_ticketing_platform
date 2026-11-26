@@ -24,7 +24,7 @@ describe("bookingReducer", () => {
   describe("people", () => {
     it("starts with the booker attending and nothing chosen", () => {
       expect(initialBookingState.people).toEqual([
-        { kind: "booker", id: BOOKER_PERSON_ID, entry: null, extras: NO_EXTRAS },
+        { kind: "booker", id: BOOKER_PERSON_ID, family: null, entry: null, extras: NO_EXTRAS },
       ]);
       expect(initialBookingState.touched).toEqual([]);
       expect(initialBookingState.payAttempted).toBe(false);
@@ -80,6 +80,7 @@ describe("bookingReducer", () => {
       expect(person(state, BOOKER_PERSON_ID)).toEqual({
         kind: "booker",
         id: BOOKER_PERSON_ID,
+        family: null,
         entry: null,
         extras: NO_EXTRAS,
       });
@@ -334,6 +335,120 @@ describe("bookingReducer", () => {
         id: "a",
       });
       expect(person(state, "a")).toBeUndefined();
+    });
+  });
+
+  describe("a Family Pass", () => {
+    const start = (
+      id = BOOKER_PERSON_ID,
+      productCode = "FAMILY_PASS",
+      newIds: readonly string[] = ["p2", "p3", "p4"],
+    ): BookingAction => ({ type: "familyStarted", id, productCode, familyId: "f1", newIds });
+    const withBooker = (age = "40"): BookingAction[] => [
+      { type: "bookerChanged", field: "ageText", value: age },
+      { type: "ageCommitted", id: BOOKER_PERSON_ID },
+    ];
+    const roles = (state: BookingState) =>
+      state.people.map((p) => `${p.id}:${p.family?.role ?? "-"}`);
+
+    it("turns the chooser's card into a family: their place plus empty ones", () => {
+      const state = run(...withBooker(), ...guest("later", "70"), start());
+      expect(roles(state)).toEqual(["booker:adult", "p2:adult", "p3:child", "p4:child", "later:-"]);
+      for (const p of state.people.slice(0, 4)) {
+        expect(p.entry).toEqual({ productCode: "FAMILY_PASS", days: [] });
+      }
+    });
+
+    it("gives a child chooser a child place", () => {
+      const state = run(
+        { type: "bookerAttendingSet", attending: false },
+        ...guest("kid", "8"),
+        start("kid"),
+      );
+      expect(roles(state)).toEqual(["p2:adult", "p3:adult", "kid:child", "p4:child"]);
+    });
+
+    it("keeps the chooser's days, and sets days for the whole family at once", () => {
+      const state = run(
+        ...withBooker(),
+        { type: "ticketChosen", id: BOOKER_PERSON_ID, productCode: "DAY_PASS_ADULT" },
+        { type: "dayToggled", id: BOOKER_PERSON_ID, day: "2026-12-12" },
+        start(),
+        { type: "familyDayToggled", familyId: "f1", day: "2026-12-13" },
+      );
+      for (const p of state.people) {
+        expect(p.entry?.days).toEqual(["2026-12-12", "2026-12-13"]);
+      }
+    });
+
+    it("drops a member's extras on a day the family stops coming", () => {
+      const state = run(
+        ...withBooker(),
+        start(),
+        { type: "familyDayToggled", familyId: "f1", day: "2026-12-12" },
+        { type: "extraDayToggled", id: "p3", productCode: "DINNER_PLATE", day: "2026-12-12" },
+        { type: "familyDayToggled", familyId: "f1", day: "2026-12-12" },
+      );
+      expect(person(state, "p3")?.extras.days).toEqual({});
+    });
+
+    it("ignores ticket and day changes for one member", () => {
+      const before = run(...withBooker(), start());
+      const changes: BookingAction[] = [
+        { type: "ticketChosen", id: "p2", productCode: "DAY_PASS_ADULT" },
+        { type: "dayToggled", id: "p2", day: "2026-12-12" },
+        { type: "personRemoved", id: "p2" },
+      ];
+      expect(changes.reduce(reduce, before).people).toEqual(before.people);
+    });
+
+    it("keeps the family ticket when a member's age doesn't fit their place", () => {
+      const state = run(
+        ...withBooker(),
+        start(),
+        { type: "guestChanged", id: "p3", field: "ageText", value: "30" },
+        { type: "ageCommitted", id: "p3" },
+      );
+      expect(person(state, "p3")?.entry?.productCode).toBe("FAMILY_PASS");
+    });
+
+    it("splits back into separate cards, dropping empty places", () => {
+      const state = run(
+        ...withBooker(),
+        start(),
+        { type: "guestChanged", id: "p3", field: "fullName", value: "Riya" },
+        { type: "familySplit", familyId: "f1" },
+      );
+      expect(state.people.map((p) => p.id)).toEqual([BOOKER_PERSON_ID, "p3"]);
+      expect(state.people.every((p) => p.family === null && p.entry === null)).toBe(true);
+    });
+
+    it("leaves the booker's place empty for someone else when they stop attending", () => {
+      const state = run(...withBooker(), start(), {
+        type: "bookerAttendingSet",
+        attending: false,
+        replacementId: "stand-in",
+      });
+      expect(roles(state)).toEqual(["stand-in:adult", "p2:adult", "p3:child", "p4:child"]);
+      expect(person(state, "stand-in")?.entry?.productCode).toBe("FAMILY_PASS");
+      // Coming back, the booker is a separate card again, not a fifth family member.
+      const back = reduce(state, { type: "bookerAttendingSet", attending: true });
+      expect(person(back, BOOKER_PERSON_ID)).toMatchObject({ family: null, entry: null });
+    });
+
+    it("refuses a pass that isn't shared, or the wrong number of new places", () => {
+      const base = run(...withBooker());
+      expect(reduce(base, start(BOOKER_PERSON_ID, "DAY_PASS_ADULT"))).toBe(base);
+      expect(reduce(base, start(BOOKER_PERSON_ID, "FAMILY_PASS", ["p2"]))).toBe(base);
+    });
+
+    it("prefills a separate card for a member coming on other days too", () => {
+      const state = run({ type: "guestAdded", id: "again", fullName: "Ravi", ageText: "38" });
+      expect(person(state, "again")).toMatchObject({
+        fullName: "Ravi",
+        ageText: "38",
+        family: null,
+      });
     });
   });
 

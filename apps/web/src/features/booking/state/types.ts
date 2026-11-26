@@ -25,9 +25,22 @@ export interface PersonExtras {
   readonly quantities: Readonly<Partial<Record<string, number>>>;
 }
 
+/** A place on a shared ticket such as the Family Pass. */
+export interface FamilyPlace {
+  /** Shared by everyone on the same pass. */
+  readonly familyId: string;
+  /** The place is for an adult or a child; the age typed must fit it. */
+  readonly role: "adult" | "child";
+}
+
 interface PersonBase {
   /** Client-side only: keys the list and links the form to the person. Never sent. */
   readonly id: string;
+  /**
+   * Set when this person holds a place on a shared pass. Their ticket and days are then the
+   * family's: chosen once on the family card, never per person.
+   */
+  readonly family: FamilyPlace | null;
   /** Null until a ticket is chosen, and always null below the free age. */
   readonly entry: ChosenEntry | null;
   /** Only ever on days this person is admitted; under-5s have none. */

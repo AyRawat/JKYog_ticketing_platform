@@ -72,6 +72,38 @@ describe("localMessages", () => {
   });
 });
 
+describe("family places", () => {
+  const family = (ages: [string, string, string]) =>
+    localMessages(
+      run(
+        ...completeBooker,
+        {
+          type: "familyStarted",
+          id: "booker",
+          productCode: "FAMILY_PASS",
+          familyId: "f",
+          newIds: ["a", "c1", "c2"],
+        },
+        ...(["a", "c1", "c2"] as const).flatMap((id, i): BookingAction[] => [
+          { type: "guestChanged", id, field: "fullName", value: `Person ${String(i)}` },
+          { type: "guestChanged", id, field: "ageText", value: ages[i] ?? "" },
+        ]),
+      ),
+      catalog,
+    );
+
+  it("accepts ages that fit their places", () => {
+    expect(family(["38", "8", "6"]).size).toBe(0);
+  });
+
+  it("flags an age that doesn't fit its place", () => {
+    const messages = family(["8", "30", "3"]);
+    expect(messages.get(fieldKey.person("a", "ageYears"))?.[0]).toMatch(/place is for an adult/);
+    expect(messages.get(fieldKey.person("c1", "ageYears"))?.[0]).toMatch(/place is for a child/);
+    expect(messages.get(fieldKey.person("c2", "ageYears"))?.[0]).toMatch(/Under 5s come free/);
+  });
+});
+
 describe("visibleMessages", () => {
   const all = new Map([
     [fieldKey.booker("email"), ["Please enter a valid email address."]],

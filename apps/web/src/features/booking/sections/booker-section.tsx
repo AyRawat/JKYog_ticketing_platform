@@ -31,7 +31,11 @@ export function BookerSection() {
           }
           checked={!attending}
           onChange={(forSomeoneElse) => {
-            dispatch({ type: "bookerAttendingSet", attending: !forSomeoneElse });
+            dispatch({
+              type: "bookerAttendingSet",
+              attending: !forSomeoneElse,
+              replacementId: crypto.randomUUID(),
+            });
           }}
         />
         <div className="grid gap-5 border-t border-white/10 pt-6 sm:grid-cols-2">

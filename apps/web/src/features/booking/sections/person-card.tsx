@@ -135,7 +135,11 @@ export function PersonCard({ person, position, focusName }: PersonCardProps) {
               onClick={() => {
                 dispatch(
                   isBooker
-                    ? { type: "bookerAttendingSet", attending: false }
+                    ? {
+                        type: "bookerAttendingSet",
+                        attending: false,
+                        replacementId: crypto.randomUUID(),
+                      }
                     : { type: "personRemoved", id: person.id },
                 );
               }}
