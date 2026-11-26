@@ -7,9 +7,9 @@ import { fieldDomId, fieldGroupId, fieldKey } from "../state/fields";
 import { familyMembers, personAgeText } from "../state/reducer";
 import { findEntryProduct } from "../state/ticket-for-age";
 import type { Person } from "../state/types";
-import { Chip, CloseButton, focusRing } from "../ui/controls";
+import { Chip, CloseButton, focusRing, WaitFor } from "../ui/controls";
 import { FieldMessages, useMessageId } from "../ui/field-messages";
-import { bandLabel, dayLabel, formatPrice, shortDayLabel } from "../ui/format";
+import { bandLabel, dayLabel, formatPrice, shortDayLabel, whoIs } from "../ui/format";
 import { TextField } from "../ui/text-field";
 import { PersonExtrasFields } from "./person-extras";
 
@@ -81,10 +81,7 @@ export function FamilyCard({ familyId, onPersonAdded }: FamilyCardProps) {
           </legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {catalog.event.days
-              .filter(
-                (day) =>
-                  product.availableDays.includes(day.date) && state.visitDays.includes(day.date),
-              )
+              .filter((day) => product.availableDays.includes(day.date))
               .map((day) => (
                 <Chip
                   key={day.date}
@@ -113,16 +110,20 @@ export function FamilyCard({ familyId, onPersonAdded }: FamilyCardProps) {
           )}
         </fieldset>
 
-        <PlaceGroup
-          title={`Adults (${String(catalog.event.ageRules.adultMinAge)}+)`}
-          members={adults}
-          onPersonAdded={onPersonAdded}
-        />
-        <PlaceGroup
-          title={`Children (${String(catalog.event.ageRules.childMinAge)}–${String(catalog.event.ageRules.adultMinAge - 1)})`}
-          members={children}
-          onPersonAdded={onPersonAdded}
-        />
+        <WaitFor waiting={entry.days.length === 0} note="Pick the family's days first.">
+          <div className="space-y-6">
+            <PlaceGroup
+              title={`Adults (${String(catalog.event.ageRules.adultMinAge)}+)`}
+              members={adults}
+              onPersonAdded={onPersonAdded}
+            />
+            <PlaceGroup
+              title={`Children (${String(catalog.event.ageRules.childMinAge)}–${String(catalog.event.ageRules.adultMinAge - 1)})`}
+              members={children}
+              onPersonAdded={onPersonAdded}
+            />
+          </div>
+        </WaitFor>
 
         <div className="border-t border-white/10 pt-4">
           <button
@@ -261,7 +262,7 @@ function FamilyPlaceRow({
               }}
             />
           )}
-          <PersonExtrasFields person={member} firstName={firstName} />
+          <PersonExtrasFields person={member} who={whoIs(firstName)} />
           <p className="text-sm text-white/65">
             Coming on other days too?{" "}
             <button

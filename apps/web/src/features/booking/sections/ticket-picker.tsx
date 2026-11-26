@@ -8,17 +8,17 @@ import { admitsBand, type CatalogEntryProduct } from "../state/ticket-for-age";
 import type { Person } from "../state/types";
 import { Chip } from "../ui/controls";
 import { FieldMessages, useMessageId } from "../ui/field-messages";
-import { formatPrice, shortDayLabel } from "../ui/format";
+import { formatPrice, shortDayLabel, type Who } from "../ui/format";
 
 interface TicketPickerProps {
   readonly person: Person;
   readonly band: TicketedBand | null;
-  readonly firstName: string;
+  readonly who: Who;
 }
 
 /** One person's ticket (radio cards) and, for a per-day ticket, their days (chips). */
-export function TicketPicker({ person, band, firstName }: TicketPickerProps) {
-  const { catalog, state, dispatch } = useBooking();
+export function TicketPicker({ person, band, who }: TicketPickerProps) {
+  const { catalog, dispatch } = useBooking();
   const entries = catalog.products.filter((p): p is CatalogEntryProduct => p.kind === "entry");
   const chosen = entries.find((product) => product.code === person.entry?.productCode);
   const ticketKey = fieldKey.person(person.id, "ticket");
@@ -88,14 +88,11 @@ export function TicketPicker({ person, band, firstName }: TicketPickerProps) {
       {chosen?.dayScope === "per_day" && (
         <fieldset id={fieldGroupId(daysKey)} aria-describedby={daysMessageId}>
           <legend className="text-sm font-medium text-white">
-            Which days is {firstName} coming?
+            Which days {who.isName} coming?
           </legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {catalog.event.days
-              .filter(
-                (day) =>
-                  chosen.availableDays.includes(day.date) && state.visitDays.includes(day.date),
-              )
+              .filter((day) => chosen.availableDays.includes(day.date))
               .map((day) => (
                 <Chip
                   key={day.date}

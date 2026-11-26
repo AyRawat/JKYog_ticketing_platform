@@ -168,3 +168,30 @@ export function CloseButton({ label, onClick }: { label: string; onClick: () => 
     </button>
   );
 }
+
+interface WaitForProps {
+  /** True while the fields can't be filled in yet. */
+  readonly waiting: boolean;
+  /** What to do first, shown above the dimmed fields. */
+  readonly note: string;
+  readonly children: ReactNode;
+}
+
+/**
+ * Fields that depend on something above them (extras on the days chosen). Until that is done
+ * they're dimmed and can't be reached, with a note saying what to do first.
+ */
+export function WaitFor({ waiting, note, children }: WaitForProps) {
+  return (
+    <div className="space-y-3">
+      {waiting && (
+        <p role="status" className="text-sm text-bright-gold">
+          {note}
+        </p>
+      )}
+      <div className={waiting ? "opacity-40" : undefined} inert={waiting}>
+        {children}
+      </div>
+    </div>
+  );
+}

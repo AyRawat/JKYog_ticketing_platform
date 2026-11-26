@@ -65,11 +65,6 @@ export type Person = BookerAttendee | Guest;
 /** Everything the family has entered. The single source of truth for the form. */
 export interface BookingState {
   readonly booker: BookerDetails;
-  /**
-   * The days the group is coming, picked before anyone is added. New tickets start on these
-   * days, and the cards offer only these days to choose from.
-   */
-  readonly visitDays: readonly IsoDate[];
   /** Everyone coming, in form order. Holds at most one `BookerAttendee`. */
   readonly people: readonly Person[];
   /**

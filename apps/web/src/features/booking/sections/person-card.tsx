@@ -8,7 +8,7 @@ import { personAgeText } from "../state/reducer";
 import { findEntryProduct } from "../state/ticket-for-age";
 import type { Person } from "../state/types";
 import { CloseButton, focusRing } from "../ui/controls";
-import { bandLabel, dayLabel, shortDayList } from "../ui/format";
+import { bandLabel, dayLabel, shortDayList, whoIs, YOU } from "../ui/format";
 import { TextField } from "../ui/text-field";
 import { PersonExtrasFields } from "./person-extras";
 import { TicketPicker } from "./ticket-picker";
@@ -28,7 +28,8 @@ export function PersonCard({ person, position, focusName }: PersonCardProps) {
   const { ageRules } = catalog.event;
   const isBooker = person.kind === "booker";
   const name = (isBooker ? state.booker.fullName : person.fullName).trim();
-  const firstName = name.split(/\s+/)[0] || (isBooker ? "you" : `person ${String(position)}`);
+  const firstName = name.split(/\s+/)[0];
+  const who = firstName ? whoIs(firstName) : isBooker ? YOU : whoIs(`person ${String(position)}`);
   const band = bandForAgeText(personAgeText(state, person), ageRules);
   const headingId = `${fieldDomId(fieldKey.person(person.id, "fullName"))}-heading`;
   const hasProblems = [...messages.keys()].some((key) => key.startsWith(`person:${person.id}.`));
@@ -141,8 +142,8 @@ export function PersonCard({ person, position, focusName }: PersonCardProps) {
             </p>
           ) : (
             <>
-              <TicketPicker person={person} band={band} firstName={firstName} />
-              <PersonExtrasFields person={person} firstName={firstName} />
+              <TicketPicker person={person} band={band} who={who} />
+              <PersonExtrasFields person={person} who={who} />
             </>
           )}
         </div>

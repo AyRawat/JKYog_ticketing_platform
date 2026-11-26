@@ -4,30 +4,43 @@ import { useBooking } from "../booking-context";
 import { fieldDomId, fieldGroupId, fieldKey } from "../state/fields";
 import { admittedDays, type CatalogExtraProduct } from "../state/reducer";
 import type { Person } from "../state/types";
-import { Chip, Stepper } from "../ui/controls";
+import { Chip, Stepper, WaitFor } from "../ui/controls";
 import { FieldMessages, useMessageId } from "../ui/field-messages";
-import { formatPrice, shortDayLabel, shortDayList } from "../ui/format";
+import { formatPrice, shortDayLabel, shortDayList, type Who } from "../ui/format";
 
 interface PersonExtrasProps {
   readonly person: Person;
-  readonly firstName: string;
+  readonly who: Who;
 }
 
 /** This person's extras: day chips for per-day ones, a stepper for whole-festival ones. */
-export function PersonExtrasFields({ person, firstName }: PersonExtrasProps) {
+export function PersonExtrasFields({ person, who }: PersonExtrasProps) {
   const { catalog } = useBooking();
   const extras = catalog.products.filter((p): p is CatalogExtraProduct => p.kind === "extra");
+  // Extras are for the days someone is coming, so they wait until there are some.
+  const waiting = admittedDays(person.entry, catalog).length === 0;
 
   return (
     <div className="space-y-5 border-t border-white/10 pt-5">
-      <h4 className="font-serif text-lg text-white">Extras for {firstName}</h4>
-      {extras.map((product) =>
-        product.dayScope === "per_day" ? (
-          <DayExtra key={product.code} product={product} person={person} firstName={firstName} />
-        ) : (
-          <CountExtra key={product.code} product={product} person={person} firstName={firstName} />
-        ),
-      )}
+      <h4 className="font-serif text-lg text-white">Extras for {who.name}</h4>
+      <WaitFor
+        waiting={waiting}
+        note={
+          person.entry
+            ? `Pick ${who.possessive} days first.`
+            : `Choose ${who.possessive} ticket and days first.`
+        }
+      >
+        <div className="space-y-5">
+          {extras.map((product) =>
+            product.dayScope === "per_day" ? (
+              <DayExtra key={product.code} product={product} person={person} who={who} />
+            ) : (
+              <CountExtra key={product.code} product={product} person={person} who={who} />
+            ),
+          )}
+        </div>
+      </WaitFor>
     </div>
   );
 }
@@ -35,10 +48,10 @@ export function PersonExtrasFields({ person, firstName }: PersonExtrasProps) {
 interface ExtraProps {
   readonly product: CatalogExtraProduct;
   readonly person: Person;
-  readonly firstName: string;
+  readonly who: Who;
 }
 
-function DayExtra({ product, person, firstName }: ExtraProps) {
+function DayExtra({ product, person, who }: ExtraProps) {
   const { catalog, dispatch } = useBooking();
   const attending = new Set(admittedDays(person.entry, catalog));
   const chosen = person.extras.days[product.code] ?? [];
@@ -49,9 +62,9 @@ function DayExtra({ product, person, firstName }: ExtraProps) {
 
   let hint: string | null = null;
   if (soldOut) hint = "Sold out";
-  else if (attending.size === 0) hint = `Choose ${firstName}'s ticket and days first.`;
-  else if (!anyOpen)
-    hint = `Runs ${shortDayList(product.availableDays)}. Add one of those days to ${firstName}'s ticket to join.`;
+  // With no days yet the whole block waits under its own note, so no "add a day" hint here.
+  else if (attending.size > 0 && !anyOpen)
+    hint = `Runs ${shortDayList(product.availableDays)}. Add one of those days to ${who.possessive} ticket to join.`;
   else if (onlySomeDays) hint = `Runs ${shortDayList(product.availableDays)} only.`;
 
   return (
@@ -78,7 +91,7 @@ function DayExtra({ product, person, firstName }: ExtraProps) {
               <Chip
                 key={day}
                 pressed={chosen.includes(day)}
-                label={`${product.name} on ${shortDayLabel(day)} for ${firstName}`}
+                label={`${product.name} on ${shortDayLabel(day)} for ${who.name}`}
                 onToggle={() => {
                   dispatch({
                     type: "extraDayToggled",
@@ -101,7 +114,7 @@ function DayExtra({ product, person, firstName }: ExtraProps) {
   );
 }
 
-function CountExtra({ product, person, firstName }: ExtraProps) {
+function CountExtra({ product, person, who }: ExtraProps) {
   const { state, dispatch } = useBooking();
   const key = fieldKey.extra(product.code, null);
   const messageId = useMessageId(key);
@@ -133,7 +146,7 @@ function CountExtra({ product, person, firstName }: ExtraProps) {
         <Stepper
           value={mine}
           max={Math.max(max, mine)}
-          thing={`${product.name} for ${firstName}`}
+          thing={`${product.name} for ${who.name}`}
           describedBy={messageId}
           onChange={(quantity) => {
             dispatch({

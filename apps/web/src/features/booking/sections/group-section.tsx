@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useBooking } from "../booking-context";
 import { fieldGroupId, fieldKey } from "../state/fields";
+import { findEntryProduct } from "../state/ticket-for-age";
 import { focusRing, SectionHeading } from "../ui/controls";
 import { FieldMessages } from "../ui/field-messages";
 import { FamilyCard } from "./family-card";
@@ -12,8 +13,13 @@ import { PersonCard } from "./person-card";
 export function GroupSection() {
   const { catalog, state, dispatch } = useBooking();
   const [justAdded, setJustAdded] = useState<string | null>(null);
-  // Tickets start on the group's days, so the group waits until there are some.
-  const waiting = state.visitDays.length === 0;
+  // Days are easy to forget, so the next person waits until everyone above has theirs.
+  const missingDays = state.people.some(
+    (person) =>
+      person.entry !== null &&
+      person.entry.days.length === 0 &&
+      findEntryProduct(catalog, person.entry.productCode)?.dayScope === "per_day",
+  );
 
   return (
     <section aria-labelledby="group-heading" className="space-y-4">
@@ -25,68 +31,58 @@ export function GroupSection() {
         </p>
       </div>
 
-      {waiting && (
-        <p
-          role="status"
-          className="rounded-xl border border-gold/50 bg-gold/10 px-4 py-3 text-sm text-white"
-        >
-          Pick the days you're coming first, under{" "}
-          <a href="#visit-days-heading" className={`underline ${focusRing}`}>
-            When are you coming?
-          </a>
-        </p>
+      <div id={fieldGroupId(fieldKey.people)}>
+        <FieldMessages fieldKey={fieldKey.people} />
+      </div>
+
+      {state.people.length > 0 && (
+        <ol className="space-y-4">
+          {state.people.map((person, index) => {
+            const { family } = person;
+            if (!family) {
+              return (
+                <PersonCard
+                  key={person.id}
+                  person={person}
+                  position={index + 1}
+                  focusName={person.id === justAdded}
+                />
+              );
+            }
+            // A family shows once, as one card, where its first member is.
+            const first = state.people.find((p) => p.family?.familyId === family.familyId);
+            return first?.id === person.id ? (
+              <FamilyCard
+                key={family.familyId}
+                familyId={family.familyId}
+                onPersonAdded={setJustAdded}
+              />
+            ) : null;
+          })}
+        </ol>
       )}
 
-      <div
-        className={`space-y-4 transition-opacity ${waiting ? "opacity-40" : ""}`}
-        inert={waiting}
+      {missingDays && (
+        <p id="add-person-note" className="text-sm text-bright-gold">
+          Pick the days for everyone above before adding someone else.
+        </p>
+      )}
+      <button
+        type="button"
+        disabled={missingDays}
+        aria-describedby={missingDays ? "add-person-note" : undefined}
+        onClick={() => {
+          const id = crypto.randomUUID();
+          dispatch({ type: "guestAdded", id });
+          setJustAdded(id);
+        }}
+        className={`flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-gold/70 text-bright-gold transition-colors hover:border-bright-gold hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gold/70 disabled:hover:bg-transparent ${focusRing}`}
       >
-        <div id={fieldGroupId(fieldKey.people)}>
-          <FieldMessages fieldKey={fieldKey.people} />
-        </div>
-
-        {state.people.length > 0 && (
-          <ol className="space-y-4">
-            {state.people.map((person, index) => {
-              const { family } = person;
-              if (!family) {
-                return (
-                  <PersonCard
-                    key={person.id}
-                    person={person}
-                    position={index + 1}
-                    focusName={person.id === justAdded}
-                  />
-                );
-              }
-              // A family shows once, as one card, where its first member is.
-              const first = state.people.find((p) => p.family?.familyId === family.familyId);
-              return first?.id === person.id ? (
-                <FamilyCard
-                  key={family.familyId}
-                  familyId={family.familyId}
-                  onPersonAdded={setJustAdded}
-                />
-              ) : null;
-            })}
-          </ol>
-        )}
-
-        <button
-          type="button"
-          onClick={() => {
-            const id = crypto.randomUUID();
-            dispatch({ type: "guestAdded", id });
-            setJustAdded(id);
-          }}
-          className={`flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-gold/70 text-bright-gold transition-colors hover:border-bright-gold hover:bg-white/5 ${focusRing}`}
-        >
-          <span aria-hidden="true" className="text-xl leading-none">
-            +
-          </span>
-          {state.people.length === 0 ? "Add a person" : "Add another person"}
-        </button>
-      </div>
+        <span aria-hidden="true" className="text-xl leading-none">
+          +
+        </span>
+        {state.people.length === 0 ? "Add a person" : "Add another person"}
+      </button>
     </section>
   );
 }

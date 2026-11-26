@@ -71,11 +71,6 @@ export type BookingAction =
       readonly productCode: string;
       readonly quantity: number;
     }
-  /**
-   * A day the group is coming was picked or unpicked. Unpicking takes it off everyone, with
-   * their extras that day; picking leaves people as they are, since their days were a choice.
-   */
-  | { readonly type: "visitDayToggled"; readonly day: IsoDate }
   | { readonly type: "promoCodeChanged"; readonly code: string }
   | { readonly type: "fieldTouched"; readonly key: string }
   | { readonly type: "payAttempted" };
@@ -117,7 +112,6 @@ export function familyMembers(state: BookingState, familyId: string): Person[] {
 /** A new booking: the booker is assumed to be coming, since most are. */
 export const initialBookingState: BookingState = {
   booker: { fullName: "", email: "", phone: "", ageText: "" },
-  visitDays: [],
   people: [newBookerAttendee()],
   detachedBooker: null,
   promoCode: "",
@@ -244,7 +238,7 @@ export function createBookingReducer(catalog: CatalogResponse) {
           if (!product) return person;
           return withEntry(person, {
             productCode: product.code,
-            days: daysFor(product, startingDays(state, person.entry)),
+            days: daysFor(product, person.entry?.days ?? []),
           });
         });
 
@@ -285,7 +279,7 @@ export function createBookingReducer(catalog: CatalogResponse) {
 
         const entry = {
           productCode: product.code,
-          days: daysFor(product, startingDays(state, chooser.entry)),
+          days: daysFor(product, chooser.entry?.days ?? []),
         };
         const { familyId } = action;
         const placed = withEntry({ ...chooser, family: { familyId, role: chooserRole } }, entry);
@@ -366,27 +360,6 @@ export function createBookingReducer(catalog: CatalogResponse) {
           return { ...person, extras: { ...person.extras, quantities } };
         });
 
-      case "visitDayToggled": {
-        const { day } = action;
-        if (!state.visitDays.includes(day)) {
-          if (!catalog.event.days.some((d) => d.date === day && d.bookable)) return state;
-          return { ...state, visitDays: [...state.visitDays, day].sort() };
-        }
-        const dropDay = <P extends Person>(person: P): P =>
-          person.entry?.days.includes(day)
-            ? withEntry(person, {
-                ...person.entry,
-                days: person.entry.days.filter((d) => d !== day),
-              })
-            : person;
-        return {
-          ...state,
-          visitDays: state.visitDays.filter((d) => d !== day),
-          people: state.people.map(dropDay),
-          detachedBooker: state.detachedBooker && dropDay(state.detachedBooker),
-        };
-      }
-
       case "promoCodeChanged":
         return { ...state, promoCode: action.code };
 
@@ -399,14 +372,6 @@ export function createBookingReducer(catalog: CatalogResponse) {
         return state.payAttempted ? state : { ...state, payAttempted: true };
     }
   };
-}
-
-/**
- * The days a newly chosen ticket starts on: the days the person already had, or else the
- * group's days.
- */
-function startingDays(state: BookingState, entry: ChosenEntry | null): readonly IsoDate[] {
-  return entry && entry.days.length > 0 ? entry.days : state.visitDays;
 }
 
 function updatePerson(

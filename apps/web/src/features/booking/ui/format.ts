@@ -47,3 +47,19 @@ export function bandLabel(band: AgeBand, rules: AgeRules): string {
       return `Under ${String(rules.childMinAge)} · free`;
   }
 }
+
+/** How to refer to a person in a sentence: "Asha" or, for the booker with no name yet, "you". */
+export interface Who {
+  /** "Asha", "you": after "for". */
+  readonly name: string;
+  /** "Asha's", "your". */
+  readonly possessive: string;
+  /** "is Asha", "are you": in a question. */
+  readonly isName: string;
+}
+
+export function whoIs(name: string): Who {
+  return { name, possessive: `${name}'s`, isName: `is ${name}` };
+}
+
+export const YOU: Who = { name: "you", possessive: "your", isName: "are you" };
