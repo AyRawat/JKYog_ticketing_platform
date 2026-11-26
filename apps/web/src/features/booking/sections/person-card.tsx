@@ -8,7 +8,7 @@ import { personAgeText } from "../state/reducer";
 import { findEntryProduct } from "../state/ticket-for-age";
 import type { Person } from "../state/types";
 import { CloseButton, focusRing } from "../ui/controls";
-import { bandLabel, dayLabel, shortDayList, whoIs, YOU } from "../ui/format";
+import { bandLabel, shortDayList, whoIs, YOU } from "../ui/format";
 import { TextField } from "../ui/text-field";
 import { PersonExtrasFields } from "./person-extras";
 import { TicketPicker } from "./ticket-picker";
@@ -105,7 +105,6 @@ export function PersonCard({ person, position, focusName }: PersonCardProps) {
               />
               <TextField
                 label="Age"
-                hint={`On ${dayLabel(ageRules.referenceDate)}`}
                 fieldKey={fieldKey.person(person.id, "ageYears")}
                 inputMode="numeric"
                 autoComplete="off"

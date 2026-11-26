@@ -4,7 +4,6 @@ import { useBooking } from "../booking-context";
 import { fieldKey } from "../state/fields";
 import { BOOKER_PERSON_ID } from "../state/reducer";
 import { Card, SectionHeading, Switch } from "../ui/controls";
-import { dayLabel } from "../ui/format";
 import { TextField } from "../ui/text-field";
 
 /** The person paying: asked once per booking. */
@@ -74,7 +73,7 @@ export function BookerSection() {
           />
           <TextField
             label="Your age"
-            hint={`On ${dayLabel(ageRules.referenceDate)}. You must be ${String(ageRules.bookerMinAge)} or over to book.`}
+            hint={`You must be ${String(ageRules.bookerMinAge)} or over to book.`}
             fieldKey={fieldKey.booker("ageYears")}
             inputMode="numeric"
             autoComplete="off"

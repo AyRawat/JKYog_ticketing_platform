@@ -9,7 +9,7 @@ import { findEntryProduct } from "../state/ticket-for-age";
 import type { Person } from "../state/types";
 import { Chip, CloseButton, focusRing, WaitFor } from "../ui/controls";
 import { FieldMessages, useMessageId } from "../ui/field-messages";
-import { bandLabel, dayLabel, formatPrice, shortDayLabel, whoIs } from "../ui/format";
+import { bandLabel, formatPrice, shortDayLabel, whoIs } from "../ui/format";
 import { TextField } from "../ui/text-field";
 import { PersonExtrasFields } from "./person-extras";
 
@@ -216,7 +216,6 @@ function FamilyPlaceRow({
           />
           <TextField
             label="Age"
-            hint={`On ${dayLabel(ageRules.referenceDate)}`}
             fieldKey={ageKey}
             inputMode="numeric"
             autoComplete="off"
