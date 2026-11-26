@@ -133,7 +133,8 @@ export function stripeGateway(stripe: Stripe, webhookSecret: string | undefined)
           {
             amount: amountCents,
             currency: code,
-            automatic_payment_methods: { enabled: true },
+            // Cards only: one clear way to pay, the same in every Stripe account's settings.
+            allowed_payment_method_types: ["card"],
             description: `Sharad Utsav booking ${reference}`,
             metadata: { booking_id: bookingId, reference },
           },

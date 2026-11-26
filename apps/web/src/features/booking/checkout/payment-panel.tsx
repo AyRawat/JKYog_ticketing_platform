@@ -88,7 +88,8 @@ function PaymentForm({
 
       <div className="mt-4 min-h-40">
         <PaymentElement
-          options={{ layout: "tabs" }}
+          // Cards only, without Stripe's Link sign-up: one short, clear form.
+          options={{ layout: "tabs", wallets: { link: "never" } }}
           onReady={() => {
             setFormReady(true);
           }}

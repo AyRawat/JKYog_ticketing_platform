@@ -37,7 +37,7 @@ describe("stripeGateway.paymentForBooking", () => {
       {
         amount: 14_400,
         currency: "usd",
-        automatic_payment_methods: { enabled: true },
+        allowed_payment_method_types: ["card"],
         description: "Sharad Utsav booking SU26-7K3QX",
         metadata: { booking_id: input.bookingId, reference: "SU26-7K3QX" },
       },
