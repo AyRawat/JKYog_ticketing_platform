@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parseAgeText } from "./age-input";
+import { bandForAgeText, parseAgeText } from "./age-input";
+
+const rules = { referenceDate: "2026-12-10", childMinAge: 5, adultMinAge: 12, bookerMinAge: 18 };
 
 describe("parseAgeText", () => {
   it.each([
@@ -15,5 +17,22 @@ describe("parseAgeText", () => {
 
   it.each(["", "  ", "4.5", "-1", "ten", "1e2", "0x10", "1000", "12a"])("rejects %j", (text) => {
     expect(parseAgeText(text)).toBeNull();
+  });
+});
+
+describe("bandForAgeText", () => {
+  it.each([
+    ["0", "infant"],
+    ["4", "infant"],
+    ["5", "child"],
+    ["11", "child"],
+    ["12", "adult"],
+    ["120", "adult"],
+  ])("puts %j in the %s band", (text, band) => {
+    expect(bandForAgeText(text, rules)).toBe(band);
+  });
+
+  it.each(["", "4.5", "121", "ten"])("has no band for %j", (text) => {
+    expect(bandForAgeText(text, rules)).toBeNull();
   });
 });

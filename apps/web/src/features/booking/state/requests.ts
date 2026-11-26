@@ -1,6 +1,7 @@
 import type { BookingRequestInput, QuoteRequestInput } from "@ticketing/contracts";
 import { parseAgeText } from "./age-input";
 import { BOOKER_PERSON_ID, personAgeText } from "./reducer";
+import type { IsoDate } from "@ticketing/domain";
 import type { BookingState, ChosenEntry, Person } from "./types";
 
 // Turn the form's state into API requests. Intent only: who is coming, which tickets, which
@@ -26,8 +27,28 @@ function readPeople(state: BookingState) {
 const toEntry = (entry: ChosenEntry | null) =>
   entry && { productCode: entry.productCode, days: [...entry.days] };
 
-const toExtras = (state: BookingState) =>
-  state.extras.map(({ productCode, day, quantity }) => ({ productCode, day, quantity }));
+/**
+ * Everyone's extras added up into the request's lines: three people with dinner on 12 Dec is
+ * one line of 3. Lines follow the order of the group list.
+ */
+function sumExtras(people: readonly Person[]) {
+  const lines = new Map<string, { productCode: string; day: IsoDate | null; quantity: number }>();
+  const add = (productCode: string, day: IsoDate | null, quantity: number) => {
+    const key = `${productCode}|${day ?? ""}`;
+    const line = lines.get(key);
+    if (line) line.quantity += quantity;
+    else lines.set(key, { productCode, day, quantity });
+  };
+  for (const person of people) {
+    for (const [code, days] of Object.entries(person.extras.days)) {
+      for (const day of days ?? []) add(code, day, 1);
+    }
+    for (const [code, quantity] of Object.entries(person.extras.quantities)) {
+      if (quantity) add(code, null, quantity);
+    }
+  }
+  return [...lines.values()];
+}
 
 const toPromoCode = (state: BookingState) => state.promoCode.trim() || null;
 
@@ -57,7 +78,8 @@ export function toQuoteRequest(state: BookingState): QuoteDraft {
         ageYears,
         entry: toEntry(person.entry),
       })),
-      extras: toExtras(state),
+      // Extras of people left out are left out too, or they'd count against the wrong headcount.
+      extras: sumExtras(readable.map(({ person }) => person)),
       promoCode: toPromoCode(state),
     },
     attendeeIds: readable.map(({ person }) => person.id),
@@ -111,7 +133,7 @@ export function toBookingRequest(state: BookingState, expectedTotalCents: number
         phone: person.kind === "booker" ? null : optional(person.phone),
         entry: toEntry(person.entry),
       })),
-      extras: toExtras(state),
+      extras: sumExtras(state.people),
       promoCode: toPromoCode(state),
       expectedTotalCents,
     },

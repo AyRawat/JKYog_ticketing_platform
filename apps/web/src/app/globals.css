@@ -12,6 +12,15 @@
   --color-success: #28a736;
   --color-error: #ef1f1f;
 
+  /*
+   * Text-only tints. On #2c2c2c the brand error red is 3.25:1 and the brand green 4.44:1, under
+   * the 4.5:1 that body text needs. The brand colours stay on borders and icons (3:1 is enough
+   * there); these lighter tints carry the words, and pass on the translucent cards too
+   * (#373737): error 5.25:1, success 5.25:1. Gold text on cards uses bright-gold (5.49:1).
+   */
+  --color-error-text: #ff8a8a;
+  --color-success-text: #4cc35a;
+
   --font-serif: var(--font-heading), ui-serif, Georgia, serif;
   --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
 }
@@ -20,4 +29,14 @@ body {
   background-color: var(--color-primary-dark);
   color: #ffffff;
   font-family: var(--font-sans);
+}
+
+* {
+  touch-action: manipulation;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }

@@ -4,6 +4,7 @@ import {
   BOOKER_PERSON_ID,
   createBookingReducer,
   initialBookingState,
+  NO_EXTRAS,
   type BookingAction,
 } from "./reducer";
 import type { BookingState, Person } from "./types";
@@ -23,9 +24,10 @@ describe("bookingReducer", () => {
   describe("people", () => {
     it("starts with the booker attending and nothing chosen", () => {
       expect(initialBookingState.people).toEqual([
-        { kind: "booker", id: BOOKER_PERSON_ID, entry: null },
+        { kind: "booker", id: BOOKER_PERSON_ID, entry: null, extras: NO_EXTRAS },
       ]);
-      expect(initialBookingState.step).toBe("who");
+      expect(initialBookingState.touched).toEqual([]);
+      expect(initialBookingState.payAttempted).toBe(false);
     });
 
     it("adds guests in order and ignores a repeated id", () => {
@@ -51,13 +53,25 @@ describe("bookingReducer", () => {
       expect(state.people.map((p) => p.id)).toEqual([BOOKER_PERSON_ID, "a"]);
     });
 
-    it("removes the booker's ticket with them when they stop attending", () => {
-      const state = run(
-        { type: "ticketChosen", id: BOOKER_PERSON_ID, productCode: "DAY_PASS_ADULT" },
+    it("takes the booker's card off the list, and brings it back as it was", () => {
+      const away = run(
+        { type: "ticketChosen", id: BOOKER_PERSON_ID, productCode: "ALL_DAY_PASS_CHILD" },
+        {
+          type: "extraQuantitySet",
+          id: BOOKER_PERSON_ID,
+          productCode: "DANDIYA_STICKS",
+          quantity: 2,
+        },
         { type: "bookerAttendingSet", attending: false },
-        { type: "bookerAttendingSet", attending: true },
       );
-      expect(person(state, BOOKER_PERSON_ID)?.entry).toBeNull();
+      expect(away.people).toEqual([]);
+
+      const back = reduce(away, { type: "bookerAttendingSet", attending: true });
+      expect(person(back, BOOKER_PERSON_ID)).toMatchObject({
+        entry: { productCode: "ALL_DAY_PASS_CHILD" },
+        extras: { quantities: { DANDIYA_STICKS: 2 } },
+      });
+      expect(back.detachedBooker).toBeNull();
     });
 
     it("reads the attending booker's details from the booker, never a copy", () => {
@@ -67,6 +81,7 @@ describe("bookingReducer", () => {
         kind: "booker",
         id: BOOKER_PERSON_ID,
         entry: null,
+        extras: NO_EXTRAS,
       });
     });
 
@@ -211,54 +226,129 @@ describe("bookingReducer", () => {
     });
   });
 
-  describe("extras", () => {
-    const dinner = (day: string, quantity: number): BookingAction => ({
-      type: "extraQuantitySet",
+  describe("each person's extras", () => {
+    const adultOn = (id: string, ...days: string[]): BookingAction[] => [
+      ...guest(id, "40"),
+      { type: "ticketChosen", id, productCode: "DAY_PASS_ADULT" },
+      ...days.map((day): BookingAction => ({ type: "dayToggled", id, day })),
+    ];
+    const dinner = (id: string, day: string): BookingAction => ({
+      type: "extraDayToggled",
+      id,
       productCode: "DINNER_PLATE",
       day,
-      quantity,
     });
+    const extras = (state: BookingState, id: string) => person(state, id)?.extras;
 
-    it("adds, updates in place, and removes at zero", () => {
-      const state = run(dinner("2026-12-11", 2), dinner("2026-12-12", 1), dinner("2026-12-11", 3));
-      expect(state.extras).toEqual([
-        { productCode: "DINNER_PLATE", day: "2026-12-11", quantity: 3 },
-        { productCode: "DINNER_PLATE", day: "2026-12-12", quantity: 1 },
-      ]);
-      expect(reduce(state, dinner("2026-12-11", 0)).extras).toEqual([
-        { productCode: "DINNER_PLATE", day: "2026-12-12", quantity: 1 },
-      ]);
-    });
-
-    it.each([-1, 1.5, Number.NaN])("treats %s as no selection", (quantity) => {
-      expect(run(dinner("2026-12-11", 2), dinner("2026-12-11", quantity)).extras).toEqual([]);
-    });
-
-    it("keeps a whole-event extra apart from per-day ones", () => {
-      const state = run(dinner("2026-12-11", 2), {
-        type: "extraQuantitySet",
-        productCode: "DANDIYA_STICKS",
-        day: null,
-        quantity: 4,
+    it("toggles a per-day extra on the person's own days, in date order", () => {
+      const state = run(
+        ...adultOn("a", "2026-12-11", "2026-12-12"),
+        dinner("a", "2026-12-12"),
+        dinner("a", "2026-12-11"),
+      );
+      expect(extras(state, "a")?.days).toEqual({ DINNER_PLATE: ["2026-12-11", "2026-12-12"] });
+      expect(extras(reduce(state, dinner("a", "2026-12-12")), "a")?.days).toEqual({
+        DINNER_PLATE: ["2026-12-11"],
       });
-      expect(state.extras).toHaveLength(2);
     });
 
-    it("leaves extras alone when a person is removed, so the server can flag the headcount", () => {
-      const state = run(...guest("a", "40"), dinner("2026-12-11", 2), {
+    it("refuses a day the person isn't coming, or the extra doesn't run", () => {
+      const state = run(
+        ...adultOn("a", "2026-12-12"),
+        dinner("a", "2026-12-13"),
+        // Garba runs on the 11th and 13th only.
+        { type: "extraDayToggled", id: "a", productCode: "GARBA_WORKSHOP", day: "2026-12-12" },
+      );
+      expect(extras(state, "a")?.days).toEqual({});
+    });
+
+    it("allows any festival day for someone on a whole-festival pass", () => {
+      const state = run(
+        ...guest("kid", "8"),
+        { type: "ticketChosen", id: "kid", productCode: "ALL_DAY_PASS_CHILD" },
+        { type: "extraDayToggled", id: "kid", productCode: "GARBA_WORKSHOP", day: "2026-12-13" },
+      );
+      expect(extras(state, "kid")?.days).toEqual({ GARBA_WORKSHOP: ["2026-12-13"] });
+    });
+
+    it("drops an extra on a day the person stops coming", () => {
+      const state = run(
+        ...adultOn("a", "2026-12-11", "2026-12-12"),
+        dinner("a", "2026-12-11"),
+        dinner("a", "2026-12-12"),
+        { type: "dayToggled", id: "a", day: "2026-12-11" },
+      );
+      expect(extras(state, "a")?.days).toEqual({ DINNER_PLATE: ["2026-12-12"] });
+    });
+
+    it("drops per-day extras when the ticket is cleared", () => {
+      const state = run(...adultOn("a", "2026-12-12"), dinner("a", "2026-12-12"), {
+        type: "ticketChosen",
+        id: "a",
+        productCode: null,
+      });
+      expect(extras(state, "a")?.days).toEqual({});
+    });
+
+    it("clears every extra once the age makes them an under-5", () => {
+      const state = run(
+        ...guest("kid", "8"),
+        { type: "ticketChosen", id: "kid", productCode: "ALL_DAY_PASS_CHILD" },
+        dinner("kid", "2026-12-12"),
+        { type: "extraQuantitySet", id: "kid", productCode: "DANDIYA_STICKS", quantity: 2 },
+        { type: "guestChanged", id: "kid", field: "ageText", value: "3" },
+        { type: "ageCommitted", id: "kid" },
+      );
+      expect(extras(state, "kid")).toEqual(NO_EXTRAS);
+    });
+
+    it("sets a whole-festival extra's count, and removes it at zero or nonsense", () => {
+      const set = (quantity: number): BookingAction => ({
+        type: "extraQuantitySet",
+        id: "a",
+        productCode: "DANDIYA_STICKS",
+        quantity,
+      });
+      expect(extras(run(...guest("a", "40"), set(3)), "a")?.quantities).toEqual({
+        DANDIYA_STICKS: 3,
+      });
+      for (const quantity of [0, -1, 1.5, Number.NaN]) {
+        expect(extras(run(...guest("a", "40"), set(3), set(quantity)), "a")?.quantities).toEqual(
+          {},
+        );
+      }
+    });
+
+    it("keeps per-day and whole-festival actions to their own kind of extra", () => {
+      const state = run(
+        ...adultOn("a", "2026-12-12"),
+        { type: "extraDayToggled", id: "a", productCode: "DANDIYA_STICKS", day: "2026-12-12" },
+        { type: "extraQuantitySet", id: "a", productCode: "DINNER_PLATE", quantity: 2 },
+      );
+      expect(extras(state, "a")).toEqual(NO_EXTRAS);
+    });
+
+    it("takes a person's extras with them when they are removed", () => {
+      const state = run(...adultOn("a", "2026-12-12"), dinner("a", "2026-12-12"), {
         type: "personRemoved",
         id: "a",
       });
-      expect(state.extras).toHaveLength(1);
+      expect(person(state, "a")).toBeUndefined();
     });
   });
 
-  it("stores the promo code and the step as given", () => {
+  it("stores the applied promo code as given", () => {
+    expect(run({ type: "promoCodeChanged", code: " seva10 " }).promoCode).toBe(" seva10 ");
+  });
+
+  it("remembers touched fields once each, and the first pay attempt", () => {
     const state = run(
-      { type: "promoCodeChanged", code: " seva10 " },
-      { type: "stepChanged", step: "review" },
+      { type: "fieldTouched", key: "booker.email" },
+      { type: "fieldTouched", key: "booker.email" },
+      { type: "payAttempted" },
     );
-    expect(state.promoCode).toBe(" seva10 ");
-    expect(state.step).toBe("review");
+    expect(state.touched).toEqual(["booker.email"]);
+    expect(state.payAttempted).toBe(true);
+    expect(reduce(state, { type: "payAttempted" })).toBe(state);
   });
 });

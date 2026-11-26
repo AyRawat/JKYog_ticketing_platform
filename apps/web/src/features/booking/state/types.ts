@@ -1,8 +1,5 @@
 import type { IsoDate } from "@ticketing/domain";
 
-export const STEPS = ["who", "passes", "extras", "review"] as const;
-export type Step = (typeof STEPS)[number];
-
 /**
  * The person paying, as typed. Text stays raw (ages included) so a half-typed field is never
  * lost; turning it into a request is a separate step.
@@ -20,11 +17,21 @@ export interface ChosenEntry {
   readonly days: readonly IsoDate[];
 }
 
+/** The extras one person has chosen. Added up across everyone when a request is built. */
+export interface PersonExtras {
+  /** Per-day extras (dinner, workshop): the days this person has one, by product code. */
+  readonly days: Readonly<Partial<Record<string, readonly IsoDate[]>>>;
+  /** Whole-event extras (dandiya sticks): how many this person wants, by product code. */
+  readonly quantities: Readonly<Partial<Record<string, number>>>;
+}
+
 interface PersonBase {
   /** Client-side only: keys the list and links the form to the person. Never sent. */
   readonly id: string;
   /** Null until a ticket is chosen, and always null below the free age. */
   readonly entry: ChosenEntry | null;
+  /** Only ever on days this person is admitted; under-5s have none. */
+  readonly extras: PersonExtras;
 }
 
 /** The booker, attending. Name, age and phone are read from `BookingState.booker`, never copied. */
@@ -42,20 +49,20 @@ export interface Guest extends PersonBase {
 
 export type Person = BookerAttendee | Guest;
 
-export interface ExtraSelection {
-  readonly productCode: string;
-  /** The day for a per-day extra; null for a whole-event extra. */
-  readonly day: IsoDate | null;
-  /** Always a positive whole number; a selection set to 0 is removed. */
-  readonly quantity: number;
-}
-
 /** Everything the family has entered. The single source of truth for the form. */
 export interface BookingState {
-  readonly step: Step;
   readonly booker: BookerDetails;
   /** Everyone coming, in form order. Holds at most one `BookerAttendee`. */
   readonly people: readonly Person[];
-  readonly extras: readonly ExtraSelection[];
+  /**
+   * The booker's card while "booking for someone else" is on, so turning it off again brings
+   * back their ticket and extras instead of starting over.
+   */
+  readonly detachedBooker: BookerAttendee | null;
+  /** The code the family applied (not what is half-typed in the box). */
   readonly promoCode: string;
+  /** Field keys the family has finished with; their problems are shown from then on. */
+  readonly touched: readonly string[];
+  /** Once they try to pay, every problem is shown. */
+  readonly payAttempted: boolean;
 }

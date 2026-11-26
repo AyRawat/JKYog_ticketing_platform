@@ -21,3 +21,8 @@ export const fieldKey = {
 export function fieldDomId(key: string): string {
   return `field-${key.replace(/[^A-Za-z0-9_-]/g, "-")}`;
 }
+
+/** The id of the box around a group of controls (ticket cards, day chips), for jump links. */
+export function fieldGroupId(key: string): string {
+  return `${fieldDomId(key)}-group`;
+}

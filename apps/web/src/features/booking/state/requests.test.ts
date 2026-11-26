@@ -35,7 +35,9 @@ const family = run(
   { type: "ticketChosen", id: "kid", productCode: "DAY_PASS_CHILD" },
   { type: "dayToggled", id: "kid", day: "2026-12-12" },
   ...guest("baby", "Dev Patel", "2"),
-  { type: "extraQuantitySet", productCode: "DINNER_PLATE", day: "2026-12-12", quantity: 2 },
+  // Dinner for both ticketed people on the 12th: one line of 2.
+  { type: "extraDayToggled", id: BOOKER_PERSON_ID, productCode: "DINNER_PLATE", day: "2026-12-12" },
+  { type: "extraDayToggled", id: "kid", productCode: "DINNER_PLATE", day: "2026-12-12" },
   { type: "promoCodeChanged", code: "  seva10 " },
 );
 
@@ -91,6 +93,49 @@ describe("toQuoteRequest", () => {
   it("sends an out-of-range age as typed, for the server to explain", () => {
     const state = run(...guest("a", "Old", "130"));
     expect(toQuoteRequest(state).request.attendees).toContainEqual({ ageYears: 130, entry: null });
+  });
+});
+
+describe("adding up each person's extras", () => {
+  const withExtras = run(
+    ...booker,
+    { type: "extraQuantitySet", id: BOOKER_PERSON_ID, productCode: "DANDIYA_STICKS", quantity: 3 },
+    ...guest("kid", "Riya", "8"),
+    { type: "ticketChosen", id: "kid", productCode: "ALL_DAY_PASS_CHILD" },
+    { type: "extraDayToggled", id: "kid", productCode: "DINNER_PLATE", day: "2026-12-12" },
+    { type: "extraDayToggled", id: "kid", productCode: "DINNER_PLATE", day: "2026-12-13" },
+    { type: "extraQuantitySet", id: "kid", productCode: "DANDIYA_STICKS", quantity: 2 },
+    {
+      type: "extraDayToggled",
+      id: BOOKER_PERSON_ID,
+      productCode: "DINNER_PLATE",
+      day: "2026-12-12",
+    },
+  );
+
+  it("sends one line per product and day, following the order of the group list", () => {
+    expect(toQuoteRequest(withExtras).request.extras).toEqual([
+      { productCode: "DINNER_PLATE", day: "2026-12-12", quantity: 2 },
+      { productCode: "DANDIYA_STICKS", day: null, quantity: 5 },
+      { productCode: "DINNER_PLATE", day: "2026-12-13", quantity: 1 },
+    ]);
+  });
+
+  it("leaves out the extras of someone left out of the quote", () => {
+    const state = run(
+      ...booker,
+      ...guest("new", "Dev", "8"),
+      { type: "ticketChosen", id: "new", productCode: "ALL_DAY_PASS_CHILD" },
+      { type: "extraDayToggled", id: "new", productCode: "DINNER_PLATE", day: "2026-12-12" },
+      { type: "guestChanged", id: "new", field: "ageText", value: "" },
+    );
+    // Their dinner would otherwise count against a day only the booker is coming.
+    expect(toQuoteRequest(state).request.extras).toEqual([]);
+  });
+
+  it("sends the same lines with the booking", () => {
+    const draft = toBookingRequest(withExtras, 0);
+    expect(draft.ok && draft.request.extras).toEqual(toQuoteRequest(withExtras).request.extras);
   });
 });
 
