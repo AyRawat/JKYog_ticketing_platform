@@ -146,7 +146,7 @@ describe("POST /api/bookings/:id/payment", () => {
       expect(stripeCalls).toEqual([]);
     });
 
-    it("for a booking with nothing to pay", async () => {
+    it("for a free booking, which is confirmed when it is made", async () => {
       // FLAT20 on one $8 child day pass: total $0.
       const free = await newBooking({
         booker,
@@ -156,7 +156,7 @@ describe("POST /api/bookings/:id/payment", () => {
       });
       const { status, json } = await pay(free.id);
       expect(status).toBe(409);
-      expect(ErrorResponse.parse(json).error.message).toBe("This booking has nothing to pay.");
+      expect(ErrorResponse.parse(json).error.message).toBe("This booking is already paid.");
       expect(stripeCalls).toEqual([]);
     });
   });

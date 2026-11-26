@@ -5,6 +5,7 @@ import { createBooking } from "@/server/bookings/create-booking";
 import { releaseExpiredHolds } from "@/server/bookings/release-holds";
 import { loadEventCatalog } from "@/server/catalog/load-catalog";
 import { getDb } from "@/server/db";
+import { logConfirmation } from "@/server/notifications/booking-confirmation";
 import {
   errorResponse,
   eventNotFound,
@@ -65,6 +66,12 @@ export async function POST(
       case "replayed": {
         const booking = await loadBookingView(db, result.bookingId);
         if (!booking) throw new Error(`Booking ${result.bookingId} vanished after being written`);
+        // A free booking is confirmed on the spot, so its confirmation goes out now.
+        if (result.kind === "created" && booking.status === "confirmed") {
+          await logConfirmation(db, booking.id).catch((error: unknown) => {
+            console.error("bookings: confirmation message failed", error);
+          });
+        }
         return jsonResponse(BookingResponse, booking, {
           status: result.kind === "created" ? 201 : 200,
           headers: { "Cache-Control": "no-store", Location: `/api/bookings/${booking.id}` },

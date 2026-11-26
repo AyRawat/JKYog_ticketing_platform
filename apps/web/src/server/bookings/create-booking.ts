@@ -50,7 +50,7 @@ class BookingConflict extends Error {
  * 1. A key seen before replays its booking (same request) or is refused (different request).
  * 2. The cart is priced again from live data with the same function as the quote; any issue,
  *    a rejected promo code, or a total other than the one the family saw stops it here.
- * 3. One transaction then writes the booking, takes stock and the promo redemption with guarded
+ * 3. One transaction then writes the booking (confirmed at once if there is nothing to pay), takes stock and the promo redemption with guarded
  *    updates (`remaining >= n`), and stores the people, lines and door list. If any guard fails
  *    the whole transaction rolls back, so nothing is half-booked.
  */
@@ -80,6 +80,8 @@ export async function createBooking(
         idempotencyKey,
         hash,
         holdExpiresAt: new Date(now.getTime() + details.holdMinutes * 60_000),
+        // Nothing to pay (e.g. FLAT20 on an $8 ticket): confirmed now, with no card step.
+        confirmedAt: quote.totalCents === 0 ? now : null,
       });
       await takeStock(trx, quote, eventCatalog);
       if (quote.promo?.status === "applied") {
@@ -160,6 +162,7 @@ async function insertBooking(
     idempotencyKey: string;
     hash: string;
     holdExpiresAt: Date;
+    confirmedAt: Date | null;
   },
 ): Promise<string> {
   const { eventCatalog, request, quote } = input;
@@ -180,6 +183,9 @@ async function insertBooking(
         discount_cents: quote.discountCents,
         total_cents: quote.totalCents,
         hold_expires_at: input.holdExpiresAt,
+        ...(input.confirmedAt
+          ? { status: "confirmed" as const, confirmed_at: input.confirmedAt }
+          : {}),
       })
       .onConflict((conflict) => conflict.column("reference").doNothing())
       .returning("id")
