@@ -181,10 +181,12 @@ function ConnectionNotice({ live }: { live: LiveQuote }) {
       </p>
     );
   }
-  if (live.problem === "failed") {
+  if (live.problem === "unreachable" || live.problem === "failed") {
     return (
       <p role="status" className="mt-3 rounded-xl bg-white/10 px-3.5 py-2.5 text-sm">
-        {live.problemMessage ?? "We couldn't update the total."}{" "}
+        {live.problem === "unreachable"
+          ? "We can't reach the server right now, so the total may be out of date. Trying again…"
+          : (live.problemMessage ?? "We couldn't update the total.")}{" "}
         <button
           type="button"
           onClick={live.retry}
