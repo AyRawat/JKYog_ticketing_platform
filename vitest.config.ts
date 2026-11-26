@@ -13,6 +13,10 @@ export default defineConfig({
     passWithNoTests: true,
     projects: [
       {
+        resolve: {
+          // Server modules import this guard; Next swaps it for an empty module on the server.
+          alias: { "server-only": web("test/integration/support/server-only.ts") },
+        },
         test: {
           name: "unit",
           include: ["packages/*/src/**/*.test.ts", "apps/web/src/**/*.test.ts"],

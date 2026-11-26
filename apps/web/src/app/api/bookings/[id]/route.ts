@@ -2,7 +2,7 @@ import { BookingId, BookingResponse } from "@ticketing/contracts";
 import { loadBookingView } from "@/server/bookings/booking-view";
 import { releaseExpiredHolds } from "@/server/bookings/release-holds";
 import { getDb } from "@/server/db";
-import { errorResponse, internalError, jsonResponse } from "@/server/http";
+import { bookingNotFound, internalError, jsonResponse } from "@/server/http";
 
 export const runtime = "nodejs";
 
@@ -34,8 +34,4 @@ export async function GET(
   } catch (error) {
     return internalError("booking: failed to load", error);
   }
-}
-
-function bookingNotFound(): Response {
-  return errorResponse(404, "BOOKING_NOT_FOUND", "We couldn't find that booking.");
 }

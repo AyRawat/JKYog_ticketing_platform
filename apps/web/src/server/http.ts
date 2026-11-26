@@ -88,7 +88,10 @@ function fail(response: Response): { ok: false; response: Response } {
 }
 
 /** The body as text, or null as soon as it passes `maxBytes`. */
-async function readTextWithLimit(request: Request, maxBytes: number): Promise<string | null> {
+async function readTextWithLimit(
+  request: Request,
+  maxBytes: number,
+): Promise<string | null> {
   const declared = Number(request.headers.get("content-length"));
   if (declared > maxBytes) return null;
   if (!request.body) return "";
@@ -122,4 +125,9 @@ export function internalError(context: string, error: unknown): Response {
 /** Unknown and malformed event slugs get the same answer. */
 export function eventNotFound(): Response {
   return errorResponse(404, "EVENT_NOT_FOUND", "We couldn't find that event.");
+}
+
+/** Unknown and malformed booking ids get the same answer, so ids can't be probed. */
+export function bookingNotFound(): Response {
+  return errorResponse(404, "BOOKING_NOT_FOUND", "We couldn't find that booking.");
 }
