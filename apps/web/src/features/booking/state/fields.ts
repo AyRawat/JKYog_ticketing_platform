@@ -10,6 +10,8 @@ export const fieldKey = {
   booker: (field: keyof Omit<BookerDetails, "ageText"> | "ageYears") => `booker.${field}`,
   person: (personId: string, field: PersonField) => `person:${personId}.${field}`,
   extra: (productCode: string, day: IsoDate | null) => `extra:${productCode}:${day ?? "any"}`,
+  /** The days the group is coming, picked before anyone is added. */
+  visitDays: "visitDays",
   /** About the group as a whole, e.g. "add at least one person". */
   people: "people",
   promo: "promo",

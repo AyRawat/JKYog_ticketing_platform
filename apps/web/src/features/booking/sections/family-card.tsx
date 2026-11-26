@@ -81,7 +81,10 @@ export function FamilyCard({ familyId, onPersonAdded }: FamilyCardProps) {
           </legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {catalog.event.days
-              .filter((day) => product.availableDays.includes(day.date))
+              .filter(
+                (day) =>
+                  product.availableDays.includes(day.date) && state.visitDays.includes(day.date),
+              )
               .map((day) => (
                 <Chip
                   key={day.date}

@@ -8,6 +8,7 @@ const reduce = createBookingReducer(catalog);
 const run = (...actions: BookingAction[]) => actions.reduce(reduce, initialBookingState);
 
 const completeBooker: BookingAction[] = [
+  { type: "visitDayToggled", day: "2026-12-12" },
   { type: "bookerChanged", field: "fullName", value: "Asha Patel" },
   { type: "bookerChanged", field: "email", value: "asha@example.com" },
   { type: "bookerChanged", field: "phone", value: "+1 214 555 0100" },
@@ -17,6 +18,16 @@ const completeBooker: BookingAction[] = [
 describe("localMessages", () => {
   it("has nothing to say about a complete booker", () => {
     expect(localMessages(run(...completeBooker), catalog).size).toBe(0);
+  });
+
+  it("asks for the days the group is coming first", () => {
+    const messages = localMessages(initialBookingState, catalog);
+    expect([...messages.keys()][0]).toBe(fieldKey.visitDays);
+    expect(
+      localMessages(run({ type: "visitDayToggled", day: "2026-12-12" }), catalog).has(
+        fieldKey.visitDays,
+      ),
+    ).toBe(false);
   });
 
   it("checks the booker's details with the contract schemas", () => {
@@ -120,7 +131,17 @@ describe("visibleMessages", () => {
   });
 
   it("shows everything once the family tries to pay", () => {
-    expect(visibleMessages(all, run({ type: "payAttempted" }))).toBe(all);
+    const state = run({ type: "visitDayToggled", day: "2026-12-12" }, { type: "payAttempted" });
+    expect(visibleMessages(all, state)).toBe(all);
+  });
+
+  it("holds back the group's messages until the days are picked", () => {
+    const withDays = new Map([
+      ...all,
+      [fieldKey.visitDays, ["Please pick the days you're coming."]],
+    ]);
+    const shown = visibleMessages(withDays, run({ type: "payAttempted" }));
+    expect([...shown.keys()]).toEqual([fieldKey.booker("email"), fieldKey.visitDays]);
   });
 });
 

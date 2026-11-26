@@ -18,7 +18,7 @@ interface TicketPickerProps {
 
 /** One person's ticket (radio cards) and, for a per-day ticket, their days (chips). */
 export function TicketPicker({ person, band, firstName }: TicketPickerProps) {
-  const { catalog, dispatch } = useBooking();
+  const { catalog, state, dispatch } = useBooking();
   const entries = catalog.products.filter((p): p is CatalogEntryProduct => p.kind === "entry");
   const chosen = entries.find((product) => product.code === person.entry?.productCode);
   const ticketKey = fieldKey.person(person.id, "ticket");
@@ -92,7 +92,10 @@ export function TicketPicker({ person, band, firstName }: TicketPickerProps) {
           </legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {catalog.event.days
-              .filter((day) => chosen.availableDays.includes(day.date))
+              .filter(
+                (day) =>
+                  chosen.availableDays.includes(day.date) && state.visitDays.includes(day.date),
+              )
               .map((day) => (
                 <Chip
                   key={day.date}

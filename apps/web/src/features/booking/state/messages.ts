@@ -29,6 +29,10 @@ export function localMessages(state: BookingState, catalog: CatalogResponse): Me
     if (message) found.set(key, [...(found.get(key) ?? []), message]);
   };
 
+  if (state.visitDays.length === 0) {
+    add(fieldKey.visitDays, "Please pick the days you're coming.");
+  }
+
   const { booker } = state;
   add(fieldKey.booker("fullName"), firstError(PersonName, booker.fullName));
   add(fieldKey.booker("email"), firstError(Email, booker.email.trim()));
@@ -91,7 +95,16 @@ export function mergeMessages(...sources: readonly Messages[]): Messages {
  * tried to pay. Group-wide ones ("add at least one person") wait for the pay attempt.
  */
 export function visibleMessages(messages: Messages, state: BookingState): Messages {
-  if (state.payAttempted) return messages;
+  // The group is locked until the days are picked, so its problems wait until then too:
+  // "pick the days" is the one thing to do first.
+  const shown =
+    state.visitDays.length === 0
+      ? new Map([...messages].filter(([key]) => !isAboutTheGroup(key)))
+      : messages;
+  if (state.payAttempted) return shown;
   const touched = new Set(state.touched);
-  return new Map([...messages].filter(([key]) => touched.has(key)));
+  return new Map([...shown].filter(([key]) => touched.has(key)));
 }
+
+const isAboutTheGroup = (key: string) =>
+  key === fieldKey.people || key.startsWith("person:") || key.startsWith("extra:");

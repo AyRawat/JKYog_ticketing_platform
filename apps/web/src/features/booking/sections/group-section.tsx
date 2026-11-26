@@ -12,6 +12,8 @@ import { PersonCard } from "./person-card";
 export function GroupSection() {
   const { catalog, state, dispatch } = useBooking();
   const [justAdded, setJustAdded] = useState<string | null>(null);
+  // Tickets start on the group's days, so the group waits until there are some.
+  const waiting = state.visitDays.length === 0;
 
   return (
     <section aria-labelledby="group-heading" className="space-y-4">
@@ -23,51 +25,68 @@ export function GroupSection() {
         </p>
       </div>
 
-      <div id={fieldGroupId(fieldKey.people)}>
-        <FieldMessages fieldKey={fieldKey.people} />
-      </div>
-
-      {state.people.length > 0 && (
-        <ol className="space-y-4">
-          {state.people.map((person, index) => {
-            const { family } = person;
-            if (!family) {
-              return (
-                <PersonCard
-                  key={person.id}
-                  person={person}
-                  position={index + 1}
-                  focusName={person.id === justAdded}
-                />
-              );
-            }
-            // A family shows once, as one card, where its first member is.
-            const first = state.people.find((p) => p.family?.familyId === family.familyId);
-            return first?.id === person.id ? (
-              <FamilyCard
-                key={family.familyId}
-                familyId={family.familyId}
-                onPersonAdded={setJustAdded}
-              />
-            ) : null;
-          })}
-        </ol>
+      {waiting && (
+        <p
+          role="status"
+          className="rounded-xl border border-gold/50 bg-gold/10 px-4 py-3 text-sm text-white"
+        >
+          Pick the days you're coming first, under{" "}
+          <a href="#visit-days-heading" className={`underline ${focusRing}`}>
+            When are you coming?
+          </a>
+        </p>
       )}
 
-      <button
-        type="button"
-        onClick={() => {
-          const id = crypto.randomUUID();
-          dispatch({ type: "guestAdded", id });
-          setJustAdded(id);
-        }}
-        className={`flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-gold/70 text-bright-gold transition-colors hover:border-bright-gold hover:bg-white/5 ${focusRing}`}
+      <div
+        className={`space-y-4 transition-opacity ${waiting ? "opacity-40" : ""}`}
+        inert={waiting}
       >
-        <span aria-hidden="true" className="text-xl leading-none">
-          +
-        </span>
-        {state.people.length === 0 ? "Add a person" : "Add another person"}
-      </button>
+        <div id={fieldGroupId(fieldKey.people)}>
+          <FieldMessages fieldKey={fieldKey.people} />
+        </div>
+
+        {state.people.length > 0 && (
+          <ol className="space-y-4">
+            {state.people.map((person, index) => {
+              const { family } = person;
+              if (!family) {
+                return (
+                  <PersonCard
+                    key={person.id}
+                    person={person}
+                    position={index + 1}
+                    focusName={person.id === justAdded}
+                  />
+                );
+              }
+              // A family shows once, as one card, where its first member is.
+              const first = state.people.find((p) => p.family?.familyId === family.familyId);
+              return first?.id === person.id ? (
+                <FamilyCard
+                  key={family.familyId}
+                  familyId={family.familyId}
+                  onPersonAdded={setJustAdded}
+                />
+              ) : null;
+            })}
+          </ol>
+        )}
+
+        <button
+          type="button"
+          onClick={() => {
+            const id = crypto.randomUUID();
+            dispatch({ type: "guestAdded", id });
+            setJustAdded(id);
+          }}
+          className={`flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-gold/70 text-bright-gold transition-colors hover:border-bright-gold hover:bg-white/5 ${focusRing}`}
+        >
+          <span aria-hidden="true" className="text-xl leading-none">
+            +
+          </span>
+          {state.people.length === 0 ? "Add a person" : "Add another person"}
+        </button>
+      </div>
     </section>
   );
 }

@@ -10,6 +10,7 @@ import { GroupSection } from "./sections/group-section";
 import { MobileTotalBar } from "./sections/mobile-total-bar";
 import { OrderSummary } from "./sections/order-summary";
 import { PriceList } from "./sections/price-list";
+import { VisitDaysSection } from "./sections/visit-days-section";
 import { messagesByField } from "./state/issues";
 import { localMessages, mergeMessages, visibleMessages } from "./state/messages";
 import { createBookingReducer, initialBookingState } from "./state/reducer";
@@ -68,6 +69,7 @@ export function BookingFlow({ catalog }: BookingFlowProps) {
           className={`space-y-12 transition-opacity ${locked ? "opacity-50" : ""}`}
           inert={locked}
         >
+          <VisitDaysSection />
           <BookerSection />
           <GroupSection />
         </div>
