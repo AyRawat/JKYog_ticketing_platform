@@ -9,6 +9,7 @@ import {
 } from "@/server/http";
 import { getPaymentGateway, PaymentProviderError } from "@/server/payments/gateway";
 import { startPayment } from "@/server/payments/start-payment";
+import { LIMITS, takeLimit, tooManyRequests, visitorOf } from "@/server/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,7 @@ const NOT_PAYABLE: Record<"confirmed" | "expired" | "cancelled" | "free", string
  * POST /api/bookings/:id/payment   body: {}
  *
  * 200 PaymentResponse | 400 | 404 BOOKING_NOT_FOUND | 409 BOOKING_NOT_PAYABLE | 413 | 415
- * | 503 PAYMENT_UNAVAILABLE | 500
+ * | 429 RATE_LIMITED | 503 PAYMENT_UNAVAILABLE | 500
  *
  * Starts the card payment for a booking holding its tickets, or returns the one already
  * started. The amount is the booking's stored total; the browser sends nothing that affects it.
@@ -40,10 +41,12 @@ export async function POST(
   if (!body.ok) return body.response;
 
   try {
-    const result = await startPayment(getDb(), getPaymentGateway(), {
-      bookingId: id,
-      now: new Date(),
-    });
+    const db = getDb();
+    const now = new Date();
+    const limited = await takeLimit(db, LIMITS.payment, visitorOf(request), now);
+    if (!limited.allowed) return tooManyRequests(LIMITS.payment, limited.retryAfterSeconds);
+
+    const result = await startPayment(db, getPaymentGateway(), { bookingId: id, now });
     switch (result.kind) {
       case "not_found":
         return bookingNotFound();

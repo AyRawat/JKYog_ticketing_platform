@@ -20,6 +20,8 @@ export interface LiveQuote {
   readonly stale: boolean;
   /** Why the current cart has no price: no connection, or the server couldn't answer. */
   readonly problem: "offline" | "failed" | null;
+  /** The server's own words for a failure it explained (e.g. too many requests), if any. */
+  readonly problemMessage: string | null;
   readonly retry: () => void;
 }
 
@@ -32,7 +34,11 @@ export function useLiveQuote(slug: string, state: BookingState): LiveQuote {
   const online = useOnline();
   const current = useCurrentDraft(state);
   const [latest, setLatest] = useState<(PricedQuote & { key: string }) | null>(null);
-  const [failure, setFailure] = useState<{ key: string; kind: "offline" | "failed" } | null>(null);
+  const [failure, setFailure] = useState<{
+    key: string;
+    kind: "offline" | "failed";
+    message: string | null;
+  } | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -44,7 +50,11 @@ export function useLiveQuote(slug: string, state: BookingState): LiveQuote {
           setLatest({ key: current.key, quote: result.data, draft: current.draft });
           setFailure(null);
         } else if (result.kind !== "aborted") {
-          setFailure({ key: current.key, kind: result.kind === "network" ? "offline" : "failed" });
+          setFailure({
+            key: current.key,
+            kind: result.kind === "network" ? "offline" : "failed",
+            message: result.kind === "error" ? result.error.message : null,
+          });
         }
       });
     }, QUOTE_DEBOUNCE_MS);
@@ -54,11 +64,12 @@ export function useLiveQuote(slug: string, state: BookingState): LiveQuote {
     };
   }, [slug, current, online, attempt]);
 
-  const failed = failure?.key === current.key ? failure.kind : null;
+  const failed = failure?.key === current.key ? failure : null;
   return {
     latest: latest && { quote: latest.quote, draft: latest.draft },
     stale: latest?.key !== current.key,
-    problem: online ? failed : "offline",
+    problem: online ? (failed?.kind ?? null) : "offline",
+    problemMessage: online ? (failed?.message ?? null) : null,
     retry: () => {
       setFailure(null);
       setAttempt((n) => n + 1);

@@ -6,6 +6,7 @@ import { releaseExpiredHolds } from "@/server/bookings/release-holds";
 import { loadEventCatalog } from "@/server/catalog/load-catalog";
 import { getDb } from "@/server/db";
 import { logConfirmation } from "@/server/notifications/booking-confirmation";
+import { LIMITS, takeLimit, tooManyRequests, visitorOf } from "@/server/rate-limit";
 import {
   errorResponse,
   eventNotFound,
@@ -28,6 +29,7 @@ export const runtime = "nodejs";
  * 409 SOLD_OUT | PROMO_UNAVAILABLE  another booking took the last units or code use first
  * 413 | 415            as for the quote endpoint
  * 422 BOOKING_INVALID  the cart breaks booking rules; `details` lists each, with its path
+ * 429 RATE_LIMITED     too many bookings from one visitor in a short time (Retry-After)
  */
 export async function POST(
   request: Request,
@@ -49,6 +51,9 @@ export async function POST(
   try {
     const db = getDb();
     const now = new Date();
+    // Each booking holds tickets: limit how many one visitor can make in a short time.
+    const limited = await takeLimit(db, LIMITS.booking, visitorOf(request), now);
+    if (!limited.allowed) return tooManyRequests(LIMITS.booking, limited.retryAfterSeconds);
     // Stock held by unpaid bookings whose time ran out is back on sale before we take any.
     await releaseExpiredHolds(db, { now });
     const eventCatalog = await loadEventCatalog(db, slug);

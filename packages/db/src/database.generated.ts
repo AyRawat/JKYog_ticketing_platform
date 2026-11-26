@@ -135,6 +135,12 @@ export interface PromoCodes {
   valid_until: Timestamp | null;
 }
 
+export interface RateLimitHits {
+  bucket: string;
+  hits: Generated<number>;
+  window_start: Timestamp;
+}
+
 export interface DB {
   admissions: Admissions;
   attendees: Attendees;
@@ -147,4 +153,5 @@ export interface DB {
   product_days: ProductDays;
   products: Products;
   promo_codes: PromoCodes;
+  rate_limit_hits: RateLimitHits;
 }

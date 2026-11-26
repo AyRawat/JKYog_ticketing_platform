@@ -50,7 +50,7 @@ export async function reseedTestDatabase(url: string): Promise<void> {
   assertTestDatabase(url);
   await withClient(url, async (client) => {
     // Every table hangs off events, so this clears all of them.
-    await client.query("TRUNCATE events, processed_stripe_events CASCADE");
+    await client.query("TRUNCATE events, processed_stripe_events, rate_limit_hits CASCADE");
     await runSeeds(client, quiet);
   });
 }

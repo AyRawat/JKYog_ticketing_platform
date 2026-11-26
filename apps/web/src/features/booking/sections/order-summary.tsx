@@ -184,7 +184,7 @@ function ConnectionNotice({ live }: { live: LiveQuote }) {
   if (live.problem === "failed") {
     return (
       <p role="status" className="mt-3 rounded-xl bg-white/10 px-3.5 py-2.5 text-sm">
-        We couldn't update the total.{" "}
+        {live.problemMessage ?? "We couldn't update the total."}{" "}
         <button
           type="button"
           onClick={live.retry}
